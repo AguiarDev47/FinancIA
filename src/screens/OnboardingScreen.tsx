@@ -32,7 +32,7 @@ export default function OnboardingScreen() {
   const flatListRef = useRef<FlatList>(null);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#FFF" }}>
+    <SafeAreaView edges={["bottom"]} style={{ flex: 1, backgroundColor: "#FFF" }}>
       <View style={styles.container}>
         <View style={{ flex: 1 }}>
           <FlatList
@@ -111,6 +111,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#3B82F6",
     paddingVertical: 14,
     borderRadius: 12,
+    marginBottom: 50
   },
   buttonText: {
     textAlign: "center",

@@ -6,30 +6,60 @@ import {
   TextInput,
   TouchableOpacity,
   Image,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { ArrowLeft } from "lucide-react-native";
+import { apiRequest } from "../services/api";
 
 export default function RegisterScreen() {
   const navigation = useNavigation<any>();
 
+  const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  async function handleRegister() {
+    if (!nome || !email || !senha) {
+      return Alert.alert("Erro", "Preencha todos os campos");
+    }
+
+    try {
+      setLoading(true);
+      await apiRequest("/auth/register", "POST", { nome, email, senha });
+      Alert.alert("Sucesso", "Cadastro realizado com sucesso");
+      navigation.goBack();
+    } catch (err: any) {
+      Alert.alert("Erro", err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={styles.container}
+    >
       <Image source={require("../../assets/logo.png")} style={styles.logo} />
-
-      <Text style={styles.subtitle}>
-        O app que vai te ajudar a ter um controle maior sobre sua gestão
-        financeira.
-      </Text>
 
       <Text style={styles.title}>Registro</Text>
 
       <TextInput
         style={styles.input}
+        placeholder="Seu nome"
+        value={nome}
+        onChangeText={setNome}
+      />
+
+      <TextInput
+        style={styles.input}
         placeholder="Seu Email"
+        autoCapitalize="none"
         value={email}
         onChangeText={setEmail}
       />
@@ -42,20 +72,25 @@ export default function RegisterScreen() {
         onChangeText={setSenha}
       />
 
-      <TouchableOpacity style={styles.buttonPrimary}>
-        <Text style={styles.buttonPrimaryText}>Cadastrar</Text>
+      <TouchableOpacity style={styles.buttonPrimary} onPress={handleRegister}>
+        {loading ? (
+          <ActivityIndicator color="#FFF" />
+        ) : (
+          <Text style={styles.buttonPrimaryText}>Cadastrar</Text>
+        )}
       </TouchableOpacity>
 
       <TouchableOpacity
-        style={{ marginTop: 10, flexDirection: "row", alignItems: "center" }}
+        style={{ flexDirection: "row" }}
         onPress={() => navigation.goBack()}
       >
         <ArrowLeft size={18} color="#444" />
         <Text style={styles.backText}>Voltar para o login</Text>
       </TouchableOpacity>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {

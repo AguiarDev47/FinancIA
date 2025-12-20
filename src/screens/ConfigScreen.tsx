@@ -1,34 +1,72 @@
-import React from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
-import { User, ChevronRight, Bell, ShieldCheck, Settings, Download, LogOut } from "lucide-react-native";
+import React, { useContext } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Alert,
+} from "react-native";
+import {
+  User,
+  ChevronRight,
+  Bell,
+  ShieldCheck,
+  Download,
+  LogOut,
+} from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { AuthContext } from "../contexts/AuthContext";
 
 export default function ConfigScreen() {
-  const usuario = {
-    nome: "Aguiar Programação",
-    email: "programacaoaguiar@gmail.com",
-  };
+  const { user, signOut } = useContext(AuthContext);
+
+  function handleLogout() {
+    Alert.alert(
+      "Sair da conta",
+      "Tem certeza que deseja sair?",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Sair",
+          style: "destructive",
+          onPress: signOut,
+        },
+      ]
+    );
+  }
 
   return (
     <SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: "#FFF" }}>
-      <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 100 }}>
-
-        <View style={{ backgroundColor: "#FFF", paddingHorizontal: 20, height: 90, marginBottom: 20 }}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={{ paddingBottom: 100 }}
+      >
+        <View
+          style={{
+            backgroundColor: "#FFF",
+            paddingHorizontal: 20,
+            height: 90,
+            marginBottom: 20,
+            justifyContent: "flex-end",
+          }}
+        >
           <Text style={styles.title}>Configurações</Text>
         </View>
 
         <View style={{ paddingHorizontal: 20 }}>
+          {/* USER */}
           <View style={styles.userCard}>
             <View style={styles.avatar}>
               <User size={28} color="#FFF" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.userName}>{usuario.nome}</Text>
-              <Text style={styles.userEmail}>{usuario.email}</Text>
+              <Text style={styles.userName}>{user?.nome}</Text>
+              <Text style={styles.userEmail}>{user?.email}</Text>
             </View>
           </View>
 
-          {/* SEÇÃO: CONTA */}
+          {/* CONTA */}
           <Text style={styles.sectionTitle}>CONTA</Text>
 
           <TouchableOpacity style={styles.item}>
@@ -47,7 +85,7 @@ export default function ConfigScreen() {
             <ChevronRight size={20} color="#999" />
           </TouchableOpacity>
 
-          {/* SEÇÃO: PREFERÊNCIAS */}
+          {/* PREFERÊNCIAS */}
           <Text style={styles.sectionTitle}>PREFERÊNCIAS</Text>
 
           <TouchableOpacity style={styles.item}>
@@ -66,12 +104,12 @@ export default function ConfigScreen() {
             <ChevronRight size={20} color="#999" />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.logOut}>
-            <LogOut size={17} color={"red"} />
+          {/* LOGOUT */}
+          <TouchableOpacity style={styles.logOut} onPress={handleLogout}>
+            <LogOut size={17} color="red" />
             <Text style={styles.logOutText}>Sair da Conta</Text>
           </TouchableOpacity>
         </View>
-
       </ScrollView>
     </SafeAreaView>
   );

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import {
   View,
   Text,
@@ -6,19 +6,34 @@ import {
   TextInput,
   TouchableOpacity,
   Image,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
+import { AuthContext } from "../contexts/AuthContext";
 
 export default function LoginScreen() {
-  const navigation = useNavigation<any>();
+  const { signIn } = useContext(AuthContext);
 
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  async function handleLogin() {
+    try {
+      setLoading(true);
+      await signIn(email, senha);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
-    <View style={styles.container}>
-      {/* LOGO */}
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={styles.container}
+    >
       <Image source={require("../../assets/logo.png")} style={styles.logo} />
 
       <Text style={styles.subtitle}>
@@ -28,10 +43,10 @@ export default function LoginScreen() {
 
       <Text style={styles.title}>Login</Text>
 
-      {/* INPUTS */}
       <TextInput
         style={styles.input}
         placeholder="Seu Email"
+        autoCapitalize="none"
         value={email}
         onChangeText={setEmail}
       />
@@ -44,29 +59,19 @@ export default function LoginScreen() {
         onChangeText={setSenha}
       />
 
-      {/* BOTÃO */}
-      <TouchableOpacity onPress={() => navigation.navigate("Dashboard")} style={{ width: "100%" }}>
+      <TouchableOpacity style={{ width: "100%" }} onPress={handleLogin}>
         <LinearGradient
           colors={["#45C58C", "#3D7DFF"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
           style={styles.buttonPrimary}
         >
-          <Text style={styles.buttonPrimaryText}>Acessar</Text>
+          {loading ? (
+            <ActivityIndicator color="#FFF" />
+          ) : (
+            <Text style={styles.buttonPrimaryText}>Acessar</Text>
+          )}
         </LinearGradient>
       </TouchableOpacity>
-
-      {/* LINKS */}
-      <TouchableOpacity onPress={() => navigation.navigate("Register")}>
-        <Text style={styles.link}>
-          Ainda não possui cadastro? <Text style={styles.linkBlue}>Clique aqui</Text>
-        </Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity>
-        <Text style={styles.linkMuted}>Esqueceu a senha?</Text>
-      </TouchableOpacity>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

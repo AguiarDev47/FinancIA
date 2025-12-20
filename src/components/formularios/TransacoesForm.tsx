@@ -7,15 +7,21 @@ import {
   TextInput,
   ScrollView,
 } from "react-native";
-import { categoriasData } from "../../data/data";
-import { ChevronLeft, Calendar, ChevronDown, ArrowLeft } from "lucide-react-native";
+import { Calendar, ChevronDown, ArrowLeft } from "lucide-react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function NovaTransacaoScreen({ navigation }: any) {
   const [tipo, setTipo] = useState<"despesa" | "receita">("despesa");
   const [valor, setValor] = useState("");
+  const [modalCategoria, setModalCategoria] = useState(false);
   const [categoria, setCategoria] = useState("");
+  const [categorias, setCategorias] = useState([
+    { id: "1", nome: "Alimentação", cor: "#3B82F6" },
+    { id: "2", nome: "Transporte", cor: "#FACC15" },
+    { id: "3", nome: "Compras", cor: "#22C55E" },
+  ]);
+  const [novaCategoria, setNovaCategoria] = useState("");
   const [descricao, setDescricao] = useState("");
   const [pagamento, setPagamento] = useState("PIX");
   const [observacoes, setObservacoes] = useState("");
@@ -76,7 +82,10 @@ export default function NovaTransacaoScreen({ navigation }: any) {
 
           {/* CATEGORIA */}
           <Text style={styles.label}>Categoria *</Text>
-          <TouchableOpacity style={styles.select}>
+          <TouchableOpacity
+            style={styles.select}
+            onPress={() => setModalCategoria(true)}
+          >
             <Text style={{ color: categoria ? "#000" : "#999" }}>
               {categoria || "Selecione uma categoria"}
             </Text>
@@ -139,6 +148,66 @@ export default function NovaTransacaoScreen({ navigation }: any) {
           </TouchableOpacity>
         </View>
       </ScrollView>
+      {modalCategoria && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Categorias</Text>
+
+            <ScrollView>
+              {categorias.map((cat) => (
+                <TouchableOpacity
+                  key={cat.id}
+                  style={styles.categoriaItem}
+                  onPress={() => {
+                    setCategoria(cat.nome);
+                    setModalCategoria(false);
+                  }}
+                >
+                  <View
+                    style={[
+                      styles.categoriaDot,
+                      { backgroundColor: cat.cor },
+                    ]}
+                  />
+                  <Text style={styles.categoriaText}>{cat.nome}</Text>
+                </TouchableOpacity>
+              ))}
+
+              {/* BOTÃO CRIAR */}
+              <TouchableOpacity
+                style={styles.criarCategoria}
+                onPress={() => {
+                  if (!novaCategoria.trim()) return;
+
+                  const nova = {
+                    id: Date.now().toString(),
+                    nome: novaCategoria,
+                    cor: "#6366F1",
+                  };
+
+                  setCategorias((prev) => [...prev, nova]);
+                  setCategoria(nova.nome);
+                  setNovaCategoria("");
+                  setModalCategoria(false);
+                }}
+              >
+                <Text style={styles.criarCategoriaText}>+ Criar categoria</Text>
+              </TouchableOpacity>
+
+              <TextInput
+                placeholder="Nome da categoria"
+                value={novaCategoria}
+                onChangeText={setNovaCategoria}
+                style={styles.input}
+              />
+            </ScrollView>
+
+            <TouchableOpacity onPress={() => setModalCategoria(false)}>
+              <Text style={{ textAlign: "center", marginTop: 10 }}>Cancelar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -268,6 +337,60 @@ const styles = StyleSheet.create({
     color: "#FFF",
     textAlign: "center",
     fontWeight: "700",
+    fontSize: 16,
+  },
+
+  modalOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    justifyContent: "flex-start",
+    zIndex: 999,
+  },
+
+  modalContent: {
+    backgroundColor: "#FFF",
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    padding: 20,
+    maxHeight: "90%",
+  },
+
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 10,
+    marginTop: 30
+  },
+
+  categoriaItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+  },
+
+  categoriaDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginRight: 10,
+  },
+
+  categoriaText: {
+    fontSize: 16,
+  },
+
+  criarCategoria: {
+    marginTop: 10,
+    paddingVertical: 12,
+  },
+
+  criarCategoriaText: {
+    color: "#3B82F6",
+    fontWeight: "600",
     fontSize: 16,
   },
 });
