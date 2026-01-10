@@ -1,11 +1,11 @@
-export const API_URL = "http://10.0.2.2:3333";
+export const API_URL = "http://192.168.1.104:3333";
 
-export async function apiRequest(
+export async function apiRequest<T = any>(
   path: string,
-  method: "GET" | "POST" = "GET",
+  method: "GET" | "POST" | "PUT" | "DELETE" = "GET",
   body?: any,
   token?: string
-) {
+): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
     method,
     headers: {
@@ -15,11 +15,11 @@ export async function apiRequest(
     body: body ? JSON.stringify(body) : undefined,
   });
 
-  const data = await res.json();
+  const data = await res.json().catch(() => null);
 
   if (!res.ok) {
-    throw new Error(data.error || "Erro inesperado");
+    throw new Error(data?.error || "Erro inesperado");
   }
 
-  return data;
+  return data as T;
 }

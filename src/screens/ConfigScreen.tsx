@@ -14,12 +14,35 @@ import {
   ShieldCheck,
   Download,
   LogOut,
+  Info,
 } from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useNavigation } from "@react-navigation/native";
 import { AuthContext } from "../contexts/AuthContext";
 
 export default function ConfigScreen() {
   const { user, signOut } = useContext(AuthContext);
+  const navigation = useNavigation<any>();
+
+  function handleProfile() {
+    navigation.navigate("Profile");
+  }
+
+  function handleSecurity() {
+    navigation.navigate("Security");
+  }
+
+  function handleNotifications() {
+    navigation.navigate("Notifications");
+  }
+
+  function handleExportData() {
+    navigation.navigate("ExportData");
+  }
+
+  function handleAbout() {
+    navigation.navigate("About");
+  }
 
   function handleLogout() {
     Alert.alert(
@@ -42,21 +65,16 @@ export default function ConfigScreen() {
         style={styles.container}
         contentContainerStyle={{ paddingBottom: 100 }}
       >
-        <View
-          style={{
-            backgroundColor: "#FFF",
-            paddingHorizontal: 20,
-            height: 90,
-            marginBottom: 20,
-            justifyContent: "flex-end",
-          }}
-        >
-          <Text style={styles.title}>Configurações</Text>
+        <View style={styles.header}>
+          <Text style={styles.title}>Configuracoes</Text>
         </View>
 
         <View style={{ paddingHorizontal: 20 }}>
-          {/* USER */}
-          <View style={styles.userCard}>
+          <TouchableOpacity
+            style={styles.userCard}
+            onPress={handleProfile}
+            activeOpacity={0.8}
+          >
             <View style={styles.avatar}>
               <User size={28} color="#FFF" />
             </View>
@@ -64,12 +82,11 @@ export default function ConfigScreen() {
               <Text style={styles.userName}>{user?.nome}</Text>
               <Text style={styles.userEmail}>{user?.email}</Text>
             </View>
-          </View>
+          </TouchableOpacity>
 
-          {/* CONTA */}
           <Text style={styles.sectionTitle}>CONTA</Text>
 
-          <TouchableOpacity style={styles.item}>
+          <TouchableOpacity style={styles.item} onPress={handleProfile}>
             <View style={styles.itemLeft}>
               <User size={20} color="#3B82F6" />
               <Text style={styles.itemText}>Perfil</Text>
@@ -77,26 +94,25 @@ export default function ConfigScreen() {
             <ChevronRight size={20} color="#999" />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.item}>
+          <TouchableOpacity style={styles.item} onPress={handleSecurity}>
             <View style={styles.itemLeft}>
               <ShieldCheck size={20} color="#3B82F6" />
-              <Text style={styles.itemText}>Segurança</Text>
+              <Text style={styles.itemText}>Seguranca</Text>
             </View>
             <ChevronRight size={20} color="#999" />
           </TouchableOpacity>
 
-          {/* PREFERÊNCIAS */}
-          <Text style={styles.sectionTitle}>PREFERÊNCIAS</Text>
+          <Text style={styles.sectionTitle}>PREFERENCIAS</Text>
 
-          <TouchableOpacity style={styles.item}>
+          <TouchableOpacity style={styles.item} onPress={handleNotifications}>
             <View style={styles.itemLeft}>
               <Bell size={20} color="#3B82F6" />
-              <Text style={styles.itemText}>Notificações</Text>
+              <Text style={styles.itemText}>Notificacoes</Text>
             </View>
             <ChevronRight size={20} color="#999" />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.item}>
+          <TouchableOpacity style={styles.item} onPress={handleExportData}>
             <View style={styles.itemLeft}>
               <Download size={20} color="#3B82F6" />
               <Text style={styles.itemText}>Exportar Dados</Text>
@@ -104,7 +120,16 @@ export default function ConfigScreen() {
             <ChevronRight size={20} color="#999" />
           </TouchableOpacity>
 
-          {/* LOGOUT */}
+          <Text style={styles.sectionTitle}>SOBRE</Text>
+
+          <TouchableOpacity style={styles.item} onPress={handleAbout}>
+            <View style={styles.itemLeft}>
+              <Info size={20} color="#3B82F6" />
+              <Text style={styles.itemText}>Sobre o App</Text>
+            </View>
+            <ChevronRight size={20} color="#999" />
+          </TouchableOpacity>
+
           <TouchableOpacity style={styles.logOut} onPress={handleLogout}>
             <LogOut size={17} color="red" />
             <Text style={styles.logOutText}>Sair da Conta</Text>
@@ -120,14 +145,18 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#F5F6FA",
   },
-
+  header: {
+    backgroundColor: "#FFF",
+    paddingHorizontal: 20,
+    height: 90,
+    marginBottom: 20,
+    justifyContent: "flex-end",
+  },
   title: {
     fontSize: 26,
     fontWeight: "700",
     marginTop: 20,
   },
-
-  /* CARD DO USUÁRIO */
   userCard: {
     flexDirection: "row",
     backgroundColor: "#3B82F6",
@@ -136,7 +165,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 20,
   },
-
   avatar: {
     backgroundColor: "#2563EB",
     width: 55,
@@ -146,19 +174,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginRight: 16,
   },
-
   userName: {
     color: "#FFF",
     fontSize: 18,
     fontWeight: "700",
   },
-
   userEmail: {
     color: "#E0E7FF",
     fontSize: 14,
   },
-
-  /* TÍTULOS DAS SEÇÕES */
   sectionTitle: {
     fontSize: 14,
     fontWeight: "700",
@@ -166,8 +190,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     marginTop: 10,
   },
-
-  /* ITENS */
   item: {
     backgroundColor: "#FFF",
     padding: 16,
@@ -178,18 +200,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     elevation: 2,
   },
-
   itemLeft: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
   },
-
   itemText: {
     fontSize: 16,
     fontWeight: "500",
   },
-
   logOut: {
     backgroundColor: "#FFF",
     alignItems: "center",
@@ -200,11 +219,11 @@ const styles = StyleSheet.create({
     borderColor: "red",
     borderRadius: 12,
     padding: 15,
-    marginTop: 15
+    marginTop: 15,
   },
   logOutText: {
     color: "red",
-    fontWeight: 600,
-    fontSize: 16
-  }
+    fontWeight: "600",
+    fontSize: 16,
+  },
 });

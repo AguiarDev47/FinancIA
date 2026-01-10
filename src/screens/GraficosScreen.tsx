@@ -1,25 +1,34 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
-import { Dimensions } from "react-native";
 import DonutChart from "../components/DonutChart";
-import { categoriasData } from "../data/data";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-const screenWidth = Dimensions.get("window").width;
+import { CategoriaGrafico, listarCategoriasGrafico } from "../services/graficos";
 
 export default function GraficosScreen() {
   const [filter, setFilter] = useState("todos");
+  const [categorias, setCategorias] = useState<CategoriaGrafico[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const categorias = categoriasData.map((c) => ({
-    ...c,
-    valor: 200,
-    percentual: 10,
-  }));
+  useEffect(() => {
+    carregar();
+  }, [filter]);
+
+  async function carregar() {
+    setLoading(true);
+    try {
+      const data = await listarCategoriasGrafico(filter);
+      setCategorias(data.filter(c => c.valor > 0));
+    } catch (e) {
+      console.error("Erro gráfico:", e);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: "#FFF" }}>
       <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 120 }}>
-        <View style={{ backgroundColor: "#FFF", paddingHorizontal: 20., paddingBottom: 20 }}>
+        <View style={{ backgroundColor: "#FFF", paddingHorizontal: 20, paddingBottom: 20 }}>
           <Text style={styles.title}>Categorias</Text>
 
           {/* FILTROS */}
@@ -41,28 +50,34 @@ export default function GraficosScreen() {
         </View>
 
         <View style={{ paddingHorizontal: 20 }}>
-          {/* --- DONUT CHART --- */}
+          {/* DONUT */}
           <View style={styles.chartCard}>
             <Text style={styles.chartTitle}>Distribuição de Gastos</Text>
 
-            <DonutChart
-              data={categorias.map((c) => ({
-                value: c.valor,
-                color: c.color,
-              }))}
-            />
+            {categorias.length > 0 ? (
+              <DonutChart
+                data={categorias.map(c => ({
+                  value: c.valor,
+                  color: c.color,
+                }))}
+              />
+            ) : (
+              <Text style={{ textAlign: "center", marginTop: 20 }}>
+                Nenhum dado para o período selecionado
+              </Text>
+            )}
           </View>
 
-          {/* LISTA DE CATEGORIAS */}
-          {categorias.map((c, i) => (
-            <View style={styles.categoryCard} key={i}>
+          {/* LISTA */}
+          {categorias.map((c) => (
+            <View style={styles.categoryCard} key={c.id}>
               <View style={{ flexDirection: "row", alignItems: "center" }}>
                 <View style={[styles.dot, { backgroundColor: c.color }]} />
                 <Text style={styles.categoryLabel}>{c.label}</Text>
               </View>
 
               <View>
-                <Text style={styles.categoryValue}>R$ {c.valor},00</Text>
+                <Text style={styles.categoryValue}>R$ {c.valor.toFixed(2)}</Text>
                 <Text style={styles.categoryPercent}>{c.percentual}%</Text>
               </View>
 
@@ -77,7 +92,6 @@ export default function GraficosScreen() {
             </View>
           ))}
         </View>
-
       </ScrollView>
     </SafeAreaView>
   );

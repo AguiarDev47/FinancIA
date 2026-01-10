@@ -1,39 +1,63 @@
-import React from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
+import React, { useEffect, useState, useCallback } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+} from "react-native";
 import { Plus, Plane, Heart } from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../types/navigation";
+import { listarObjetivos, Objetivo } from "../services/objetivos";
+
+type Nav = NativeStackNavigationProp<RootStackParamList, "Objetivos">;
 
 export default function ObjetivosScreen() {
-  type Nav = NativeStackNavigationProp<RootStackParamList, "Transacoes">;
   const navigation = useNavigation<Nav>();
 
-  const objetivos = [
-    {
-      id: 1,
-      nome: "Viagem para Europa",
-      dataLimite: "19 de dez de 2025",
-      economizado: 3500,
-      meta: 15000,
-      icon: <Plane size={26} color="#FFF" />,
-      color: "#A78BFA", // lilás
-    },
-    {
-      id: 2,
-      nome: "Reserva de Emergência",
-      dataLimite: "29 de jun de 2025",
-      economizado: 5200,
-      meta: 10000,
-      icon: <Heart size={26} color="#FFF" />,
-      color: "#A78BFA",
-    },
-  ];
+  const [objetivos, setObjetivos] = useState<Objetivo[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  function percentual(obj: any) {
+  async function carregar() {
+    try {
+      const data = await listarObjetivos();
+      setObjetivos(data);
+    } catch (e) {
+      console.error("Erro ao carregar objetivos", e);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useFocusEffect(
+    useCallback(() => {
+      carregar();
+    }, [])
+  );
+
+  function percentual(obj: Objetivo) {
+    if (!obj.meta) return 0;
     return Math.round((obj.economizado / obj.meta) * 100);
+  }
+
+  function iconeObjetivo(nome: string) {
+    if (nome.toLowerCase().includes("viagem")) {
+      return <Plane size={26} color="#FFF" />;
+    }
+    return <Heart size={26} color="#FFF" />;
+  }
+
+  if (loading) {
+    return (
+      <View style={styles.loading}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
   }
 
   return (
@@ -42,70 +66,83 @@ export default function ObjetivosScreen() {
         <View style={styles.header}>
           <View>
             <Text style={styles.title}>Meus Objetivos</Text>
-            <Text style={styles.subtitle}>{objetivos.length} objetivos cadastrados</Text>
+            <Text style={styles.subtitle}>
+              {objetivos.length} objetivos cadastrados
+            </Text>
           </View>
 
-          <TouchableOpacity style={styles.addButton} onPress={() => navigation.navigate("ObjetivoForm")}>
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => navigation.navigate("ObjetivoForm")}
+          >
             <Plus size={24} color="#FFF" />
           </TouchableOpacity>
         </View>
 
         <View style={{ paddingHorizontal: 20 }}>
-          {/* LISTA DE OBJETIVOS */}
-          {objetivos.map((obj) => (
-            <View key={obj.id} style={styles.card}>
+          {objetivos.map((obj) => {
+            const perc = percentual(obj);
 
-              {/* Cabeçalho do card */}
-              <View style={styles.cardHeader}>
-                <LinearGradient
-                  colors={["#3B82F6", "rgba(220, 68, 240, 1)"]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.iconBox}
-                >
-                  {obj.icon}
-                </LinearGradient>
+            return (
+              <TouchableOpacity
+                key={obj.id}
+                activeOpacity={0.85}
+                onPress={() =>
+                  navigation.navigate("ObjetivoDetalhe", { id: obj.id })
+                }
+              >
+                <View style={styles.card}>
+                  <View style={styles.cardHeader}>
+                    <LinearGradient
+                      colors={["#3B82F6", "#A855F7"]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={styles.iconBox}
+                    >
+                      {iconeObjetivo(obj.nome)}
+                    </LinearGradient>
 
-                <View style={{ flex: 1, marginLeft: 12 }}>
-                  <Text style={styles.cardTitle}>{obj.nome}</Text>
-                  <Text style={styles.cardDate}>até {obj.dataLimite}</Text>
+                    <View style={{ flex: 1, marginLeft: 12 }}>
+                      <Text style={styles.cardTitle}>{obj.nome}</Text>
+                      <Text style={styles.cardDate}>
+                        até{" "}
+                        {new Date(obj.dataLimite).toLocaleDateString("pt-BR")}
+                      </Text>
+                    </View>
+
+                    <Text style={styles.percentText}>{perc}%</Text>
+                  </View>
+
+                  <Text style={styles.progressLabel}>Progresso</Text>
+
+                  <View style={styles.progressBackground}>
+                    <View
+                      style={[
+                        styles.progressFill,
+                        { width: `${perc}%` },
+                      ]}
+                    />
+                  </View>
+
+                  <View style={styles.valuesRow}>
+                    <View>
+                      <Text style={styles.valueLabel}>Economizado</Text>
+                      <Text style={styles.valueMoney}>
+                        R$ {obj.economizado.toLocaleString("pt-BR")}
+                      </Text>
+                    </View>
+
+                    <View>
+                      <Text style={styles.valueLabel}>Faltam</Text>
+                      <Text style={styles.valueMoney}>
+                        R$ {(obj.meta - obj.economizado).toLocaleString("pt-BR")}
+                      </Text>
+                    </View>
+                  </View>
                 </View>
-
-                <Text style={styles.percentText}>{percentual(obj)}%</Text>
-              </View>
-
-              {/* PROGRESSO */}
-              <Text style={styles.progressLabel}>Progresso</Text>
-
-              <View style={styles.progressBackground}>
-                <View
-                  style={[
-                    styles.progressFill,
-                    {
-                      width: `${percentual(obj)}%`,
-                      backgroundColor: obj.color,
-                    },
-                  ]}
-                />
-              </View>
-
-              {/* VALORES */}
-              <View style={styles.valuesRow}>
-                <View>
-                  <Text style={styles.valueLabel}>Economizado</Text>
-                  <Text style={styles.valueMoney}>R$ {obj.economizado.toLocaleString("pt-BR")},00</Text>
-                </View>
-
-                <View>
-                  <Text style={styles.valueLabel}>Faltam</Text>
-                  <Text style={styles.valueMoney}>
-                    R$ {(obj.meta - obj.economizado).toLocaleString("pt-BR")},00
-                  </Text>
-                </View>
-              </View>
-
-            </View>
-          ))}
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -217,4 +254,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
   },
+  loading: {
+
+  }
 });

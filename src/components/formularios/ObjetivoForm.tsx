@@ -6,108 +6,203 @@ import {
   TouchableOpacity,
   TextInput,
   ScrollView,
+  Modal,
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
 } from "react-native";
 import { Calendar, ChevronDown, ArrowLeft } from "lucide-react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RouteProp, useRoute } from "@react-navigation/native";
+import { RootStackParamList } from "../../types/navigation";
+import { criarObjetivo } from "../../services/objetivos";
 
-export default function ObjetivoForm({ navigation }: any) {
+type Nav = NativeStackNavigationProp<
+  RootStackParamList,
+  "ObjetivoForm"
+>;
+
+type Route = RouteProp<RootStackParamList, "ObjetivoForm">;
+
+interface Props {
+  navigation: Nav;
+}
+
+export default function ObjetivoForm({ navigation }: Props) {
+  const route = useRoute<Route>();
+  const objetivoId = route.params?.id;
+
   const [objetivo, setObjetivo] = useState("");
   const [valorAlvo, setValorAlvo] = useState("");
   const [valorAtual, setValorAtual] = useState("");
   const [categoria, setCategoria] = useState("");
+  const [modalCategoria, setModalCategoria] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const [data, setData] = useState(new Date());
   const [mostrarCalendario, setMostrarCalendario] = useState(false);
 
+  const categorias = ["Viagem", "Estudos", "Emergência", "Saúde"];
+
+  async function handleSalvar() {
+    if (!objetivo || !valorAlvo || !categoria) return;
+
+    const payload = {
+      nome: objetivo,
+      meta: Number(valorAlvo.replace(",", ".")),
+      economizado: Number(valorAtual.replace(",", ".")) || 0,
+      dataLimite: data.toISOString(),
+    };
+
+    try {
+      setSaving(true);
+      await criarObjetivo(payload);
+      navigation.goBack();
+    } catch (err: any) {
+      Alert.alert("Erro", err?.message || "Nao foi possivel criar o objetivo");
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: "#FFF" }}>
-      <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 100 }}>
-
-        <View style={{ backgroundColor: "#FFF", paddingHorizontal: 20, borderBottomWidth: 1, borderBottomColor: "#DDD" }}>
-          {/* HEADER */}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={{ flex: 1 }}
+      >
+        <ScrollView
+          style={styles.container}
+          contentContainerStyle={{ paddingBottom: 120 }}
+        >
           <View style={styles.header}>
             <TouchableOpacity onPress={() => navigation.goBack()}>
               <ArrowLeft size={26} color="#000" />
             </TouchableOpacity>
 
-            <Text style={styles.title}>Novo Objetivo</Text>
-          </View>
-        </View>
-
-        <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
-          <Text style={styles.label}>Nome do Objetivo</Text>
-          <TextInput
-            placeholder="Ex: Curso programador"
-            value={objetivo}
-            onChangeText={setObjetivo}
-            style={styles.input}
-          />
-
-          {/* CATEGORIA */}
-          <Text style={styles.label}>Categoria *</Text>
-          <TouchableOpacity style={styles.select}>
-            <Text style={{ color: categoria ? "#000" : "#999" }}>
-              {categoria || "Selecione uma categoria"}
+            <Text style={styles.title}>
+              {objetivoId ? "Editar Objetivo" : "Novo Objetivo"}
             </Text>
-            <ChevronDown size={20} color="#888" />
-          </TouchableOpacity>
-
-          {/* VALOR */}
-          <Text style={styles.label}>Valor Alvo </Text>
-          <View style={styles.valorBox}>
-            <Text style={styles.rs}>R$</Text>
-            <TextInput
-              placeholder="0,00"
-              keyboardType="numeric"
-              value={valorAlvo}
-              onChangeText={setValorAlvo}
-              style={styles.valorInput}
-            />
-          </View>
-          
-          {/* VALOR */}
-          <Text style={styles.label}>Valor Atual *</Text>
-          <View style={styles.valorBox}>
-            <Text style={styles.rs}>R$</Text>
-            <TextInput
-              placeholder="0,00"
-              keyboardType="numeric"
-              value={valorAtual}
-              onChangeText={setValorAtual}
-              style={styles.valorInput}
-            />
           </View>
 
-          {/* DATA */}
-          <Text style={styles.label}>Data Desejada*</Text>
-
-          <TouchableOpacity
-            style={styles.select}
-            onPress={() => setMostrarCalendario(true)}
-          >
-            <Text>{data.toLocaleDateString("pt-BR")}</Text>
-            <Calendar size={20} color="#888" />
-          </TouchableOpacity>
-
-          {mostrarCalendario && (
-            <DateTimePicker
-              value={data}
-              mode="date"
-              onChange={(event: any, selectedDate?: Date) => {
-                setMostrarCalendario(false);
-                if (selectedDate) setData(selectedDate);
-              }}
+          <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
+            <Text style={styles.label}>Nome do Objetivo</Text>
+            <TextInput
+              placeholder="Ex: Curso de programação"
+              value={objetivo}
+              onChangeText={setObjetivo}
+              style={styles.input}
             />
-          )}
 
-          {/* BOTÃO SALVAR */}
-          <TouchableOpacity style={styles.button}>
-            <Text style={styles.buttonText}>Criar Objetivo</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
+            <Text style={styles.label}>Categoria *</Text>
+            <TouchableOpacity
+              style={styles.select}
+              onPress={() => setModalCategoria(true)}
+            >
+              <Text style={{ color: categoria ? "#000" : "#999" }}>
+                {categoria || "Selecione uma categoria"}
+              </Text>
+              <ChevronDown size={20} color="#888" />
+            </TouchableOpacity>
+
+            <Text style={styles.label}>Valor Alvo</Text>
+            <View style={styles.valorBox}>
+              <Text style={styles.rs}>R$</Text>
+              <TextInput
+                placeholder="0,00"
+                keyboardType="numeric"
+                value={valorAlvo}
+                onChangeText={setValorAlvo}
+                style={styles.valorInput}
+              />
+            </View>
+
+            <Text style={styles.label}>Valor Atual</Text>
+            <View style={styles.valorBox}>
+              <Text style={styles.rs}>R$</Text>
+              <TextInput
+                placeholder="0,00"
+                keyboardType="numeric"
+                value={valorAtual}
+                onChangeText={setValorAtual}
+                style={styles.valorInput}
+              />
+            </View>
+
+            <Text style={styles.label}>Data Limite</Text>
+            <TouchableOpacity
+              style={styles.select}
+              onPress={() => setMostrarCalendario(true)}
+            >
+              <Text>{data.toLocaleDateString("pt-BR")}</Text>
+              <Calendar size={20} color="#888" />
+            </TouchableOpacity>
+
+            {mostrarCalendario && (
+              <DateTimePicker
+                value={data}
+                mode="date"
+                onChange={(e, d) => {
+                  setMostrarCalendario(false);
+                  if (d) setData(d);
+                }}
+              />
+            )}
+
+            <TouchableOpacity
+              style={[styles.button, saving && styles.buttonDisabled]}
+              onPress={handleSalvar}
+              disabled={saving}
+            >
+              <Text style={styles.buttonText}>
+                {objetivoId ? "Salvar Alterações" : "Criar Objetivo"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+
+      <Modal
+        transparent
+        animationType="fade"
+        visible={modalCategoria}
+        onRequestClose={() => setModalCategoria(false)}
+      >
+        <TouchableOpacity
+          style={styles.overlay}
+          activeOpacity={1}
+          onPress={() => setModalCategoria(false)}
+        >
+          <View style={styles.modal}>
+            <Text style={styles.modalTitle}>Selecione uma categoria</Text>
+
+            <ScrollView>
+              {categorias.map(cat => (
+                <TouchableOpacity
+                  key={cat}
+                  style={styles.item}
+                  onPress={() => {
+                    setCategoria(cat);
+                    setModalCategoria(false);
+                  }}
+                >
+                  <Text style={styles.itemText}>{cat}</Text>
+                </TouchableOpacity>
+              ))}
+
+              <TouchableOpacity
+                style={styles.createButton}
+                onPress={() => setModalCategoria(false)}
+              >
+                <Text style={styles.createText}>+ Criar nova categoria</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
     </SafeAreaView>
   );
 }
@@ -231,11 +326,57 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 50,
   },
+  buttonDisabled: {
+    opacity: 0.7,
+  },
 
   buttonText: {
     color: "#FFF",
     textAlign: "center",
     fontWeight: "700",
     fontSize: 16,
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  modal: {
+    width: "85%",
+    backgroundColor: "#FFF",
+    borderRadius: 18,
+    padding: 20,
+    maxHeight: "70%",
+    elevation: 5,
+  },
+
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 12,
+    textAlign: "center",
+  },
+
+  item: {
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: "#EEE",
+  },
+
+  itemText: {
+    fontSize: 16,
+    fontWeight: "500",
+  },
+
+  createButton: {
+    paddingVertical: 16,
+    alignItems: "center",
+  },
+
+  createText: {
+    color: "#3B82F6",
+    fontWeight: "700",
   },
 });

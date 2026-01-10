@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -10,33 +10,111 @@ import {
 import { Calendar, ChevronDown, ArrowLeft } from "lucide-react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { atualizarTransacao, buscarTransacaoPorId, criarTransacao } from "../../services/transacoes";
+import { listarCategorias, criarCategoria, Categoria } from "../../services/categorias";
+import { RouteProp, useRoute } from "@react-navigation/native";
+import { RootStackParamList } from "../../types/navigation";
+
+type Route = RouteProp<RootStackParamList, "NovaTransacao">;
 
 export default function NovaTransacaoScreen({ navigation }: any) {
   const [tipo, setTipo] = useState<"despesa" | "receita">("despesa");
   const [valor, setValor] = useState("");
   const [modalCategoria, setModalCategoria] = useState(false);
   const [categoria, setCategoria] = useState("");
-  const [categorias, setCategorias] = useState([
-    { id: "1", nome: "Alimentação", cor: "#3B82F6" },
-    { id: "2", nome: "Transporte", cor: "#FACC15" },
-    { id: "3", nome: "Compras", cor: "#22C55E" },
-  ]);
+  const [categorias, setCategorias] = useState<Categoria[]>([]);
+
   const [novaCategoria, setNovaCategoria] = useState("");
   const [descricao, setDescricao] = useState("");
-  const [pagamento, setPagamento] = useState("PIX");
+  const [pagamento, setPagamento] = useState("Cartão");
   const [observacoes, setObservacoes] = useState("");
 
   const [data, setData] = useState(new Date());
   const [mostrarCalendario, setMostrarCalendario] = useState(false);
+  const route = useRoute<Route>();
+  const transacaoId = route.params?.id;
+  const isEdit = Boolean(transacaoId);
 
   const formasPagamento = ["PIX", "Cartão Débito", "Cartão Crédito", "Dinheiro", "Transferência"];
+
+  useEffect(() => {
+    carregarCategorias();
+  }, []);
+
+  async function handleSalvar() {
+    if (!valor || !categoria) return;
+
+    const payload = {
+      tipo,
+      valor: Number(valor.replace(",", ".")),
+      descricao,
+      data: data.toISOString(),
+      formaPagamento: pagamento,
+      observacoes,
+      categoriaId: categorias.find(c => c.nome === categoria)!.id,
+    };
+
+    try {
+      if (isEdit) {
+        await atualizarTransacao(transacaoId!, payload);
+      } else {
+        await criarTransacao(payload);
+      }
+
+      navigation.goBack();
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  async function carregarCategorias() {
+    try {
+      const data = await listarCategorias();
+      setCategorias(data);
+    } catch (err) {
+      console.error("Erro ao carregar categorias", err);
+    }
+  }
+
+  async function handleCriarCategoria() {
+    if (!novaCategoria.trim()) return;
+
+    const nova = await criarCategoria({
+      nome: novaCategoria,
+      tipo,
+      cor: "#6366F1",
+    });
+
+    setCategorias((prev) => [...prev, nova]);
+    setCategoria(nova.nome);
+    setNovaCategoria("");
+    setModalCategoria(false);
+  }
+
+  useEffect(() => {
+    if (isEdit) {
+      carregarTransacao();
+    }
+  }, [isEdit]);
+
+  async function carregarTransacao() {
+    const data = await buscarTransacaoPorId(transacaoId!);
+
+    setTipo(data.tipo);
+    setValor(String(data.valor));
+    setDescricao(data.descricao || "");
+    setCategoria(data.categoria.nome);
+    setPagamento(data.formaPagamento || "PIX");
+    setObservacoes(data.observacoes || "");
+    setData(new Date(data.data));
+  }
 
   return (
     <SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: "#FFF" }}>
       <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 100 }}>
 
         <View style={{ backgroundColor: "#FFF", paddingHorizontal: 20 }}>
-          {/* HEADER */}
+
           <View style={styles.header}>
             <TouchableOpacity onPress={() => navigation.goBack()}>
               <ArrowLeft size={26} color="#000" />
@@ -44,7 +122,7 @@ export default function NovaTransacaoScreen({ navigation }: any) {
 
             <Text style={styles.title}>Nova Transação</Text>
           </View>
-          {/* TIPO */}
+
           <View style={styles.tipoContainer}>
             <TouchableOpacity
               style={[styles.tipoButton, tipo === "despesa" && styles.tipoAtivo]}
@@ -67,7 +145,7 @@ export default function NovaTransacaoScreen({ navigation }: any) {
         </View>
 
         <View style={{ paddingHorizontal: 20, marginTop: 10 }}>
-          {/* VALOR */}
+          
           <Text style={styles.label}>Valor *</Text>
           <View style={styles.valorBox}>
             <Text style={styles.rs}>R$</Text>
@@ -80,11 +158,14 @@ export default function NovaTransacaoScreen({ navigation }: any) {
             />
           </View>
 
-          {/* CATEGORIA */}
+          
           <Text style={styles.label}>Categoria *</Text>
           <TouchableOpacity
             style={styles.select}
-            onPress={() => setModalCategoria(true)}
+            onPress={async () => {
+              await carregarCategorias();
+              setModalCategoria(true);
+            }}
           >
             <Text style={{ color: categoria ? "#000" : "#999" }}>
               {categoria || "Selecione uma categoria"}
@@ -92,7 +173,7 @@ export default function NovaTransacaoScreen({ navigation }: any) {
             <ChevronDown size={20} color="#888" />
           </TouchableOpacity>
 
-          {/* DESCRIÇÃO */}
+          
           <Text style={styles.label}>Descrição</Text>
           <TextInput
             placeholder="Ex: Almoço no restaurante"
@@ -101,7 +182,7 @@ export default function NovaTransacaoScreen({ navigation }: any) {
             style={styles.input}
           />
 
-          {/* DATA */}
+          
           <Text style={styles.label}>Data *</Text>
 
           <TouchableOpacity
@@ -123,7 +204,7 @@ export default function NovaTransacaoScreen({ navigation }: any) {
             />
           )}
 
-          {/* FORMA DE PAGAMENTO */}
+          
           <Text style={styles.label}>Forma de Pagamento</Text>
 
           <TouchableOpacity style={styles.select}>
@@ -131,7 +212,7 @@ export default function NovaTransacaoScreen({ navigation }: any) {
             <ChevronDown size={20} color="#888" />
           </TouchableOpacity>
 
-          {/* OBSERVAÇÕES */}
+          
           <Text style={styles.label}>Observações</Text>
           <TextInput
             placeholder="Adicione observações (opcional)"
@@ -142,9 +223,11 @@ export default function NovaTransacaoScreen({ navigation }: any) {
             style={styles.textarea}
           />
 
-          {/* BOTÃO SALVAR */}
-          <TouchableOpacity style={styles.button}>
-            <Text style={styles.buttonText}>Salvar Transação</Text>
+          
+          <TouchableOpacity style={styles.button} onPress={handleSalvar}>
+            <Text style={styles.buttonText}>
+              {isEdit ? "Salvar Alterações" : "Salvar Transação"}
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -173,24 +256,8 @@ export default function NovaTransacaoScreen({ navigation }: any) {
                 </TouchableOpacity>
               ))}
 
-              {/* BOTÃO CRIAR */}
-              <TouchableOpacity
-                style={styles.criarCategoria}
-                onPress={() => {
-                  if (!novaCategoria.trim()) return;
-
-                  const nova = {
-                    id: Date.now().toString(),
-                    nome: novaCategoria,
-                    cor: "#6366F1",
-                  };
-
-                  setCategorias((prev) => [...prev, nova]);
-                  setCategoria(nova.nome);
-                  setNovaCategoria("");
-                  setModalCategoria(false);
-                }}
-              >
+              
+              <TouchableOpacity style={styles.criarCategoria} onPress={handleCriarCategoria}>
                 <Text style={styles.criarCategoriaText}>+ Criar categoria</Text>
               </TouchableOpacity>
 

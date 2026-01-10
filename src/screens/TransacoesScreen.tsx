@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -9,11 +9,33 @@ import {
 } from "react-native";
 import { Plus, Search, ShoppingBag, Briefcase } from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../types/navigation";
+import { listarTransacoes } from "../services/transacoes";
 
 export default function TransacoesScreen() {
+  const [transacoes, setTransacoes] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useFocusEffect(
+    useCallback(() => {
+      carregar();
+    }, [])
+  );
+
+  async function carregar() {
+    try {
+      setLoading(true);
+      const data = await listarTransacoes();
+      setTransacoes(data);
+    } catch (e) {
+      console.error("Erro ao carregar transações", e);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   type Nav = NativeStackNavigationProp<RootStackParamList, "Transacoes">;
   const navigation = useNavigation<Nav>();
 
@@ -101,37 +123,49 @@ export default function TransacoesScreen() {
         <View style={{ paddingHorizontal: 20 }}>
           <Text style={styles.monthTitle}>NOVEMBRO 2025</Text>
 
-          {/* ITEM DESPESA */}
-          <View style={styles.transactionCard}>
-            <View style={[styles.iconCircle, { backgroundColor: "#FEE2E2" }]}>
-              <ShoppingBag size={20} color="#EF4444" />
-            </View>
+          {transacoes.map((item) => (
+            <TouchableOpacity
+              key={item.id}
+              style={styles.transactionCard}
+              onPress={() =>
+                navigation.navigate("TransacaoDetalhe", { id: item.id })
+              }
+            >
+              <View
+                style={[
+                  styles.iconCircle,
+                  {
+                    backgroundColor:
+                      item.tipo === "despesa" ? "#FEE2E2" : "#DCFCE7",
+                  },
+                ]}
+              >
+                {item.tipo === "despesa" ? (
+                  <ShoppingBag size={20} color="#EF4444" />
+                ) : (
+                  <Briefcase size={20} color="#22C55E" />
+                )}
+              </View>
 
-            <View style={{ flex: 1 }}>
-              <Text style={styles.transactionName}>Mercado</Text>
-              <Text style={styles.transactionDate}>15 de Nov</Text>
-            </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.transactionName}>
+                  {item.descricao || item.categoria?.nome}
+                </Text>
+                <Text style={styles.transactionDate}>
+                  {new Date(item.data).toLocaleDateString("pt-BR")}
+                </Text>
+              </View>
 
-            <Text style={[styles.transactionValue, { color: "#EF4444" }]}>
-              - R$ 250,00
-            </Text>
-          </View>
-
-          {/* ITEM RECEITA */}
-          <View style={styles.transactionCard}>
-            <View style={[styles.iconCircle, { backgroundColor: "#DCFCE7" }]}>
-              <Briefcase size={20} color="#22C55E" />
-            </View>
-
-            <View style={{ flex: 1 }}>
-              <Text style={styles.transactionName}>Criação de Site</Text>
-              <Text style={styles.transactionDate}>15 de Nov</Text>
-            </View>
-
-            <Text style={[styles.transactionValue, { color: "#22C55E" }]}>
-              + R$ 500,00
-            </Text>
-          </View>
+              <Text
+                style={[
+                  styles.transactionValue,
+                  { color: item.tipo === "despesa" ? "#EF4444" : "#22C55E" },
+                ]}
+              >
+                {item.tipo === "despesa" ? "-" : "+"} R$ {item.valor.toFixed(2)}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </View>
       </ScrollView>
     </SafeAreaView>

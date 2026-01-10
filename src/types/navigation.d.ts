@@ -1,9 +1,18 @@
-export type RootStackParamList = {
+﻿export type RootStackParamList = {
   Onboarding: undefined;
   Login: undefined;
   Register: undefined;
   Dashboard: undefined;
+  Profile: undefined;
+  Security: undefined;
+  Notifications: undefined;
+  ExportData: undefined;
+  About: undefined;
   Transacoes: undefined;
-  NovaTransacao: undefined;
-  ObjetivoForm: undefined;
+  NovaTransacao: { id?: string } | undefined;
+  TransacaoDetalhe: { id: string };
+  Objetivos: undefined;
+  ObjetivoForm: { id?: string } | undefined;
+  ObjetivoDetalhe: { id: string };
 };
+

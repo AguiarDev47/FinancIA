@@ -1,21 +1,156 @@
-import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
-import { Wallet, ArrowUpCircle, ArrowDownCircle, BarChart2, Minus, Plus, Target, FileText } from "lucide-react-native";
+﻿import React, { useEffect, useState } from "react";
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, RefreshControl, } from "react-native";
+import { Wallet, ArrowUpCircle, ArrowDownCircle, BarChart2, Minus, Plus, Target, FileText, Calendar } from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import BarChart, { BarDatum } from "../components/BarChart";
+import { buscarResumoDashboard } from "../services/dashboard";
 
 export default function DashboardScreen() {
   const navigation = useNavigation<any>();
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [mes, setMes] = useState(new Date().getMonth());
+  const [ano, setAno] = useState(new Date().getFullYear());
+  const [showPicker, setShowPicker] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  async function carregar(mesAtual: number, anoAtual: number) {
+    try {
+      const res = await buscarResumoDashboard(mesAtual, anoAtual);
+      setData(res);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function onRefresh() {
+    try {
+      setRefreshing(true);
+      await carregar(mes, ano);
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
+  useEffect(() => {
+    setLoading(true);
+    carregar(mes, ano);
+  }, [mes, ano]);
+
+  if (loading || !data) {
+    return (
+      <View style={styles.loading}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
+  function valorFormatado(valor: number) {
+    return valor.toLocaleString("pt-BR", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  }
+
+  function buildBarData(): BarDatum[] {
+    const transacoes = Array.isArray(data?.ultimasTransacoes) ? data.ultimasTransacoes : [];
+    const monthLabels = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+    const now = new Date();
+    const months = Array.from({ length: 4 }).map((_, index) => {
+      const date = new Date(now.getFullYear(), now.getMonth() - (3 - index), 1);
+      return {
+        key: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`,
+        label: monthLabels[date.getMonth()],
+      };
+    });
+
+    const grouped = new Map<string, { receita: number; despesa: number }>();
+    months.forEach((m) => grouped.set(m.key, { receita: 0, despesa: 0 }));
+
+    transacoes.forEach((item: any) => {
+      const valor = Number(item?.valor ?? 0);
+      if (!Number.isFinite(valor)) {
+        return;
+      }
+      const date = item?.data ? new Date(item.data) : null;
+      if (!date || Number.isNaN(date.getTime())) {
+        return;
+      }
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+      if (!grouped.has(key)) {
+        return;
+      }
+      const entry = grouped.get(key)!;
+      if (item?.tipo === "despesa") {
+        entry.despesa += Math.abs(valor);
+      } else {
+        entry.receita += Math.abs(valor);
+      }
+    });
+
+    const hasData = Array.from(grouped.values()).some((v) => v.receita > 0 || v.despesa > 0);
+    if (!hasData) {
+      const receitas = Number(data?.receitas ?? 0);
+      const despesas = Number(data?.despesas ?? 0);
+      return [
+        { receita: receitas, despesa: despesas, label: monthLabels[now.getMonth()] },
+      ];
+    }
+
+    return months.map((month) => {
+      const values = grouped.get(month.key) ?? { receita: 0, despesa: 0 };
+      return { receita: values.receita, despesa: values.despesa, label: month.label };
+    });
+  }
 
   return (
     <SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: "#3B82F6" }}>
-      <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 120 }}>
-        {/* HEADER */}
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={{ paddingBottom: 120 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#FFF"
+            colors={["#3B82F6"]}
+          />
+        }
+      >
         <View style={styles.header}>
           <View>
             <Text style={styles.headerTitle}>Saldo Total:</Text>
-            <Text style={styles.headerValue}>R$ 0,00</Text>
-            <Text style={styles.headerMonth}>Novembro de 2025</Text>
+            <Text style={styles.headerValue}>R$ {valorFormatado(data.saldo ?? 0)}</Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <Text style={styles.headerMonth}>
+                {new Date(ano, mes).toLocaleDateString("pt-BR", {
+                  month: "long",
+                  year: "numeric",
+                })}
+              </Text>
+
+              <TouchableOpacity onPress={() => setShowPicker(true)}>
+                <Calendar size={18} color="#FFF" />
+              </TouchableOpacity>
+              {showPicker && (
+                <DateTimePicker
+                  value={new Date(ano, mes, 1)}
+                  mode="date"
+                  display="spinner"
+                  onChange={(_, date) => {
+                    setShowPicker(false);
+                    if (date) {
+                      setMes(date.getMonth());
+                      setAno(date.getFullYear());
+                    }
+                  }}
+                />
+              )}
+
+            </View>
+
           </View>
 
           <View style={styles.headerIcon}>
@@ -23,52 +158,36 @@ export default function DashboardScreen() {
           </View>
         </View>
 
-        {/* CARDS ENTRADAS / SAIDAS */}
         <View style={styles.row}>
-          {/* Entradas */}
           <View style={styles.card}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 4, justifyContent: "space-between" }}>
               <Text style={styles.cardTitle}>Entradas </Text>
               <ArrowUpCircle size={20} color="#22c55e" />
             </View>
-            <Text style={[styles.cardValue, { color: "#22c55e" }]}>R$ 0,00</Text>
+            <Text style={[styles.cardValue, { color: "#22c55e" }]}>R$ {valorFormatado(data.receitas ?? 0)}</Text>
           </View>
 
-          {/* Saídas */}
           <View style={styles.card}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 4, justifyContent: "space-between" }}>
-              <Text style={styles.cardTitle}>Saídas</Text>
+              <Text style={styles.cardTitle}>Saidas</Text>
               <ArrowDownCircle size={20} color="#ef4444" />
             </View>
-            <Text style={[styles.cardValue, { color: "#ef4444" }]}>R$ 0,00</Text>
+            <Text style={[styles.cardValue, { color: "#ef4444" }]}>R$ {valorFormatado(data.despesas ?? 0)}</Text>
           </View>
         </View>
 
-        {/* GRÁFICO (mock visual) */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Fluxo Mensal</Text>
             <BarChart2 size={20} color="#555" />
           </View>
 
-          <View style={styles.chartRow}>
-            <View style={styles.chartBar}></View>
-            <View style={[styles.chartBar, { height: 120 }]}></View>
-          </View>
+          <BarChart data={buildBarData()} height={160} />
 
-          <View style={styles.chartLabels}>
-            <Text style={styles.chartLabel}>jun</Text>
-            <Text style={styles.chartLabel}>jul</Text>
-            <Text style={styles.chartLabel}>ago</Text>
-            <Text style={styles.chartLabel}>set</Text>
-            <Text style={styles.chartLabel}>out</Text>
-            <Text style={styles.chartLabel}>nov</Text>
-          </View>
         </View>
 
-        {/* AÇÕES RÁPIDAS */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Ações Rápidas</Text>
+          <Text style={styles.sectionTitle}>Acoes Rapidas</Text>
 
           <View style={styles.quickActionsRow}>
             <TouchableOpacity style={[styles.quickAction]} onPress={() => navigation.navigate("Transacoes")}>
@@ -85,14 +204,14 @@ export default function DashboardScreen() {
               <Text style={styles.quickLabel}>Receita</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.quickAction}>
+            <TouchableOpacity style={styles.quickAction} onPress={() => navigation.navigate("Objetivos")}>
               <View style={[styles.boxIcon, { backgroundColor: "#F5F3FF" }]}>
                 <Target color="#7C3AED" />
               </View>
               <Text style={styles.quickLabel}>Objetivo</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.quickAction}>
+            <TouchableOpacity style={styles.quickAction} onPress={() => navigation.navigate("Graficos")}>
               <View style={[styles.boxIcon, { backgroundColor: "#FFF7ED" }]}>
                 <FileText color="#F97316" />
               </View>
@@ -101,20 +220,18 @@ export default function DashboardScreen() {
           </View>
         </View>
 
-        {/* INSIGHTS DA IA */}
         <View style={styles.sectionIA}>
-          <View style={styles.insightHeader}>
-            <Text style={styles.sectionTitle}>Insights da IA</Text>
-            <View style={styles.badgeNew}>
-              <Text style={styles.badgeText}>NOVO</Text>
+          <View style={styles.sectionIA}>
+            <View style={styles.insightHeader}>
+              <Text style={styles.sectionTitle}>Insights da IA</Text>
+              <View style={styles.badgeNew}>
+                <Text style={styles.badgeText}>NOVO</Text>
+              </View>
             </View>
-          </View>
-
-          <View style={styles.insightCard}>
-            <Text style={styles.insightEmoji}>✨</Text>
-            <Text style={styles.insightText}>
-              Parabéns! Você reduziu seus gastos em 100% este mês.
-            </Text>
+            <View style={styles.insightCard}>
+              <Text style={styles.insightEmoji}>✨</Text>
+              <Text style={styles.insightText}> Parabens! Voce reduziu seus gastos em 100% este mes. </Text>
+            </View>
           </View>
         </View>
       </ScrollView>
@@ -328,4 +445,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     flex: 1,
   },
+
+  loading: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center"
+  }
 });
+
+
+
+
