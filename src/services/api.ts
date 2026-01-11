@@ -1,4 +1,4 @@
-export const API_URL = "http://192.168.1.104:3333";
+export const API_URL = "http://192.168.1.210:3333";
 
 export async function apiRequest<T = any>(
   path: string,
