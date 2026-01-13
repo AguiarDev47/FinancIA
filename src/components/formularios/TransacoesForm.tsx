@@ -14,26 +14,33 @@ import { atualizarTransacao, buscarTransacaoPorId, criarTransacao } from "../../
 import { listarCategorias, criarCategoria, Categoria } from "../../services/categorias";
 import { RouteProp, useRoute } from "@react-navigation/native";
 import { RootStackParamList } from "../../types/navigation";
+import ModalCategorias from "./ModalCategorias";
 
 type Route = RouteProp<RootStackParamList, "NovaTransacao">;
 
 export default function NovaTransacaoScreen({ navigation }: any) {
-  const [tipo, setTipo] = useState<"despesa" | "receita">("despesa");
+  const route = useRoute<Route>();
+  const transacaoId = route.params?.id;
+  const tipoInicial = route.params?.tipo ?? "despesa";
+  const isEdit = Boolean(transacaoId);
+
+  const [tipo, setTipo] = useState<"despesa" | "receita">(tipoInicial);
   const [valor, setValor] = useState("");
   const [modalCategoria, setModalCategoria] = useState(false);
+  const [modalPagamento, setModalPagamento] = useState(false);
   const [categoria, setCategoria] = useState("");
   const [categorias, setCategorias] = useState<Categoria[]>([]);
+  const [corCategoria, setCorCategoria] = useState("#83e948");
 
   const [novaCategoria, setNovaCategoria] = useState("");
   const [descricao, setDescricao] = useState("");
-  const [pagamento, setPagamento] = useState("Cartão");
+  const [pagamento, setPagamento] = useState("PIX");
   const [observacoes, setObservacoes] = useState("");
 
   const [data, setData] = useState(new Date());
   const [mostrarCalendario, setMostrarCalendario] = useState(false);
-  const route = useRoute<Route>();
-  const transacaoId = route.params?.id;
-  const isEdit = Boolean(transacaoId);
+
+  const coresCategorias = ["#83e948", "#22c55e", "#3b82f6", "#8b5cf6", "#ef4444", "#0ea5e9", "#f97316", "#14b8a6"];
 
   const formasPagamento = ["PIX", "Cartão Débito", "Cartão Crédito", "Dinheiro", "Transferência"];
 
@@ -46,7 +53,7 @@ export default function NovaTransacaoScreen({ navigation }: any) {
 
     const payload = {
       tipo,
-      valor: Number(valor.replace(",", ".")),
+      valor: Number(valor),
       descricao,
       data: data.toISOString(),
       formaPagamento: pagamento,
@@ -82,12 +89,13 @@ export default function NovaTransacaoScreen({ navigation }: any) {
     const nova = await criarCategoria({
       nome: novaCategoria,
       tipo,
-      cor: "#6366F1",
+      cor: corCategoria,
     });
 
     setCategorias((prev) => [...prev, nova]);
     setCategoria(nova.nome);
     setNovaCategoria("");
+    setCorCategoria("#83e948");
     setModalCategoria(false);
   }
 
@@ -107,6 +115,18 @@ export default function NovaTransacaoScreen({ navigation }: any) {
     setPagamento(data.formaPagamento || "PIX");
     setObservacoes(data.observacoes || "");
     setData(new Date(data.data));
+  }
+
+  function formatarMoeda(valor: number) {
+    return (valor / 100).toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
+  }
+
+  function handleValorChange(text: string) {
+    const apenasNumeros = text.replace(/\D/g, "");
+    setValor(apenasNumeros);
   }
 
   return (
@@ -145,20 +165,20 @@ export default function NovaTransacaoScreen({ navigation }: any) {
         </View>
 
         <View style={{ paddingHorizontal: 20, marginTop: 10 }}>
-          
+
           <Text style={styles.label}>Valor *</Text>
           <View style={styles.valorBox}>
             <Text style={styles.rs}>R$</Text>
             <TextInput
-              placeholder="0,00"
+              placeholder="R$ 0,00"
               keyboardType="numeric"
-              value={valor}
-              onChangeText={setValor}
+              value={valor ? formatarMoeda(Number(valor)) : ""}
+              onChangeText={handleValorChange}
               style={styles.valorInput}
             />
           </View>
 
-          
+
           <Text style={styles.label}>Categoria *</Text>
           <TouchableOpacity
             style={styles.select}
@@ -173,7 +193,7 @@ export default function NovaTransacaoScreen({ navigation }: any) {
             <ChevronDown size={20} color="#888" />
           </TouchableOpacity>
 
-          
+
           <Text style={styles.label}>Descrição</Text>
           <TextInput
             placeholder="Ex: Almoço no restaurante"
@@ -182,7 +202,7 @@ export default function NovaTransacaoScreen({ navigation }: any) {
             style={styles.input}
           />
 
-          
+
           <Text style={styles.label}>Data *</Text>
 
           <TouchableOpacity
@@ -204,15 +224,18 @@ export default function NovaTransacaoScreen({ navigation }: any) {
             />
           )}
 
-          
+
           <Text style={styles.label}>Forma de Pagamento</Text>
 
-          <TouchableOpacity style={styles.select}>
+          <TouchableOpacity
+            style={styles.select}
+            onPress={() => setModalPagamento(true)}
+          >
             <Text>{pagamento}</Text>
             <ChevronDown size={20} color="#888" />
           </TouchableOpacity>
 
-          
+
           <Text style={styles.label}>Observações</Text>
           <TextInput
             placeholder="Adicione observações (opcional)"
@@ -223,7 +246,7 @@ export default function NovaTransacaoScreen({ navigation }: any) {
             style={styles.textarea}
           />
 
-          
+
           <TouchableOpacity style={styles.button} onPress={handleSalvar}>
             <Text style={styles.buttonText}>
               {isEdit ? "Salvar Alterações" : "Salvar Transação"}
@@ -231,45 +254,43 @@ export default function NovaTransacaoScreen({ navigation }: any) {
           </TouchableOpacity>
         </View>
       </ScrollView>
-      {modalCategoria && (
+      <ModalCategorias
+        visible={modalCategoria}
+        categorias={categorias}
+        categoriaSelecionada={categoria}
+        novaCategoria={novaCategoria}
+        onNovaCategoriaChange={setNovaCategoria}
+        coresCategorias={coresCategorias}
+        corSelecionada={corCategoria}
+        onSelecionarCor={setCorCategoria}
+        onSelecionar={(cat) => {
+          setCategoria(cat.nome);
+          setModalCategoria(false);
+        }}
+        onCriarCategoria={handleCriarCategoria}
+        onFechar={() => setModalCategoria(false)}
+      />
+      {modalPagamento && (
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Categorias</Text>
+            <Text style={styles.modalTitle}>Forma de pagamento</Text>
 
             <ScrollView>
-              {categorias.map((cat) => (
+              {formasPagamento.map((forma) => (
                 <TouchableOpacity
-                  key={cat.id}
+                  key={forma}
                   style={styles.categoriaItem}
                   onPress={() => {
-                    setCategoria(cat.nome);
-                    setModalCategoria(false);
+                    setPagamento(forma);
+                    setModalPagamento(false);
                   }}
                 >
-                  <View
-                    style={[
-                      styles.categoriaDot,
-                      { backgroundColor: cat.cor },
-                    ]}
-                  />
-                  <Text style={styles.categoriaText}>{cat.nome}</Text>
+                  <Text style={styles.categoriaText}>{forma}</Text>
                 </TouchableOpacity>
               ))}
-
-              
-              <TouchableOpacity style={styles.criarCategoria} onPress={handleCriarCategoria}>
-                <Text style={styles.criarCategoriaText}>+ Criar categoria</Text>
-              </TouchableOpacity>
-
-              <TextInput
-                placeholder="Nome da categoria"
-                value={novaCategoria}
-                onChangeText={setNovaCategoria}
-                style={styles.input}
-              />
             </ScrollView>
 
-            <TouchableOpacity onPress={() => setModalCategoria(false)}>
+            <TouchableOpacity onPress={() => setModalPagamento(false)}>
               <Text style={{ textAlign: "center", marginTop: 10 }}>Cancelar</Text>
             </TouchableOpacity>
           </View>
@@ -439,25 +460,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
 
-  categoriaDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    marginRight: 10,
-  },
-
   categoriaText: {
-    fontSize: 16,
-  },
-
-  criarCategoria: {
-    marginTop: 10,
-    paddingVertical: 12,
-  },
-
-  criarCategoriaText: {
-    color: "#3B82F6",
-    fontWeight: "600",
     fontSize: 16,
   },
 });

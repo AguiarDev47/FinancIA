@@ -15,6 +15,7 @@ import {
   getNotificationPreferences,
   updateNotificationPreferences,
 } from "../services/notifications";
+import { getErrorMessage } from "../utils/errors";
 
 export default function NotificationsScreen({ navigation }: any) {
   const [progressoObjetivos, setProgressoObjetivos] = useState(false);
@@ -36,7 +37,7 @@ export default function NotificationsScreen({ navigation }: any) {
       setNotificacoesGerais(!!data.notificacoesEmailGerais);
       setRelatorioSemanal(!!data.notificacoesEmailRelatorio);
     } catch (err: any) {
-      Alert.alert("Erro", err.message || "Nao foi possivel carregar");
+      Alert.alert("Erro", getErrorMessage(err, "Nao foi possivel carregar."));
     } finally {
       setLoading(false);
     }
@@ -69,7 +70,7 @@ export default function NotificationsScreen({ navigation }: any) {
       setNovasTransacoes(previous.notificacoesPushTransacoes);
       setNotificacoesGerais(previous.notificacoesEmailGerais);
       setRelatorioSemanal(previous.notificacoesEmailRelatorio);
-      Alert.alert("Erro", err.message || "Nao foi possivel salvar");
+      Alert.alert("Erro", getErrorMessage(err, "Nao foi possivel salvar."));
     }
   }
 
@@ -80,12 +81,12 @@ export default function NotificationsScreen({ navigation }: any) {
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <ArrowLeft size={24} color="#000" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Notificacoes</Text>
+          <Text style={styles.headerTitle}>Notificações</Text>
           <View style={{ width: 24 }} />
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>NOTIFICACOES PUSH</Text>
+          <Text style={styles.sectionTitle}>NOTIFICAÇÕES PUSH</Text>
 
           <View style={styles.card}>
             <View style={[styles.iconWrap, { backgroundColor: "#F3E8FF" }]}>
@@ -114,8 +115,8 @@ export default function NotificationsScreen({ navigation }: any) {
               <CreditCard size={18} color="#3B82F6" />
             </View>
             <View style={styles.cardText}>
-              <Text style={styles.cardTitle}>Novas Transacoes</Text>
-              <Text style={styles.cardSubtitle}>Confirme cada transacao registrada</Text>
+              <Text style={styles.cardTitle}>Novas Transações</Text>
+              <Text style={styles.cardSubtitle}>Notificamos cada transação registrada</Text>
             </View>
             {loading ? (
               <ActivityIndicator />
@@ -133,15 +134,15 @@ export default function NotificationsScreen({ navigation }: any) {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>NOTIFICACOES POR E-MAIL</Text>
+          <Text style={styles.sectionTitle}>NOTIFICAÇÕES POR E-MAIL</Text>
 
           <View style={styles.card}>
             <View style={[styles.iconWrap, { backgroundColor: "#DCFCE7" }]}>
               <Mail size={18} color="#22C55E" />
             </View>
             <View style={styles.cardText}>
-              <Text style={styles.cardTitle}>Notificacoes Gerais</Text>
-              <Text style={styles.cardSubtitle}>Novidades e atualizacoes do app</Text>
+              <Text style={styles.cardTitle}>Notificações Gerais</Text>
+              <Text style={styles.cardSubtitle}>Novidades e atualizações do app</Text>
             </View>
             {loading ? (
               <ActivityIndicator />
@@ -162,8 +163,8 @@ export default function NotificationsScreen({ navigation }: any) {
               <FileText size={18} color="#6366F1" />
             </View>
             <View style={styles.cardText}>
-              <Text style={styles.cardTitle}>Relatorio Semanal</Text>
-              <Text style={styles.cardSubtitle}>Resumo das suas financas toda semana</Text>
+              <Text style={styles.cardTitle}>Relatório Semanal</Text>
+              <Text style={styles.cardSubtitle}>Resumo das suas finanças toda semana</Text>
             </View>
             {loading ? (
               <ActivityIndicator />

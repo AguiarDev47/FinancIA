@@ -7,32 +7,81 @@ import {
   TextInput,
   ScrollView,
   Alert,
+  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ArrowLeft, Camera, User } from "lucide-react-native";
 import { AuthContext } from "../contexts/AuthContext";
+import * as ImagePicker from "expo-image-picker";
+import { getErrorMessage } from "../utils/errors";
 
 export default function ProfileScreen({ navigation }: any) {
   const { user, updateProfile } = useContext(AuthContext);
   const [nome, setNome] = useState(user?.nome ?? "");
-  const [remuneracao, setRemuneracao] = useState(
-    user?.remuneracao !== undefined ? String(user.remuneracao) : "0"
+  const [remuneracaoCentavos, setRemuneracaoCentavos] = useState(
+    user?.remuneracao !== undefined
+      ? String(Math.round(user.remuneracao * 100))
+      : ""
+  );
+  const [fotoPerfil, setFotoPerfil] = useState<string | null>(
+    user?.fotoPerfil ?? null
   );
   const email = user?.email ?? "";
 
+  async function handleSelecionarFoto() {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Perfil", "Permissao para acessar fotos negada.");
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+      base64: true,
+    });
+
+    if (result.canceled || !result.assets?.length) {
+      return;
+    }
+
+    const asset = result.assets[0];
+    if (!asset.base64) {
+      Alert.alert("Perfil", "Nao foi possivel carregar a foto.");
+      return;
+    }
+
+    const dataUri = `data:image/jpeg;base64,${asset.base64}`;
+    setFotoPerfil(dataUri);
+  }
+
   async function handleSalvar() {
-    const valor = Number(remuneracao.replace(",", "."));
+    const valor = remuneracaoCentavos
+      ? Number(remuneracaoCentavos) / 100
+      : 0;
     if (Number.isNaN(valor)) {
       Alert.alert("Perfil", "Informe uma remuneracao valida.");
       return;
     }
 
     try {
-      await updateProfile(nome, valor);
+      await updateProfile(nome, valor, fotoPerfil);
       Alert.alert("Perfil", "Alteracoes salvas.");
     } catch (err: any) {
-      Alert.alert("Perfil", err.message || "Nao foi possivel salvar.");
+      Alert.alert(
+        "Perfil",
+        getErrorMessage(err, "Nao foi possivel salvar.")
+      );
     }
+  }
+
+  function formatarMoeda(valor: number) {
+    return valor.toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
   }
 
   return (
@@ -51,9 +100,13 @@ export default function ProfileScreen({ navigation }: any) {
 
         <View style={styles.avatarWrap}>
           <View style={styles.avatar}>
-            <User size={42} color="#FFF" />
+            {fotoPerfil ? (
+              <Image source={{ uri: fotoPerfil }} style={styles.avatarImage} />
+            ) : (
+              <User size={42} color="#FFF" />
+            )}
           </View>
-          <TouchableOpacity style={styles.cameraButton}>
+          <TouchableOpacity style={styles.cameraButton} onPress={handleSelecionarFoto}>
             <Camera size={16} color="#FFF" />
           </TouchableOpacity>
         </View>
@@ -76,17 +129,23 @@ export default function ProfileScreen({ navigation }: any) {
           />
           <Text style={styles.helper}>O e-mail nao pode ser alterado</Text>
 
-          <Text style={styles.label}>Remuneracao Atual</Text>
+          <Text style={styles.label}>Remuneração Atual</Text>
           <TextInput
-            value={remuneracao}
-            onChangeText={setRemuneracao}
+            value={
+              remuneracaoCentavos
+                ? formatarMoeda(Number(remuneracaoCentavos) / 100)
+                : ""
+            }
+            onChangeText={(text) =>
+              setRemuneracaoCentavos(text.replace(/\D/g, ""))
+            }
             style={styles.input}
             placeholder="Valor Fixo Mensal"
             keyboardType="numeric"
           />
 
           <TouchableOpacity style={styles.saveButton} onPress={handleSalvar}>
-            <Text style={styles.saveText}>Salvar Alteracoes</Text>
+            <Text style={styles.saveText}>Salvar Alterações</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -127,6 +186,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#3B82F6",
     alignItems: "center",
     justifyContent: "center",
+  },
+  avatarImage: {
+    width: 110,
+    height: 110,
+    borderRadius: 55,
   },
   cameraButton: {
     position: "absolute",

@@ -1,6 +1,6 @@
-﻿import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, RefreshControl, } from "react-native";
-import { Wallet, ArrowUpCircle, ArrowDownCircle, BarChart2, Minus, Plus, Target, FileText, Calendar } from "lucide-react-native";
+import React, { useEffect, useState } from "react";
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, RefreshControl } from "react-native";
+import { Wallet, ArrowUpCircle, ArrowDownCircle, BarChart2, Minus, Plus, Target, FileText, Calendar, DollarSign, AlertTriangle } from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -15,6 +15,7 @@ export default function DashboardScreen() {
   const [ano, setAno] = useState(new Date().getFullYear());
   const [showPicker, setShowPicker] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const insights = Array.isArray(data?.insights) ? data.insights : [];
 
   async function carregar(mesAtual: number, anoAtual: number) {
     try {
@@ -47,19 +48,12 @@ export default function DashboardScreen() {
     );
   }
 
-  function valorFormatado(valor: number) {
-    return valor.toLocaleString("pt-BR", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
-  }
-
   function buildBarData(): BarDatum[] {
     const transacoes = Array.isArray(data?.ultimasTransacoes) ? data.ultimasTransacoes : [];
     const monthLabels = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
     const now = new Date();
-    const months = Array.from({ length: 4 }).map((_, index) => {
-      const date = new Date(now.getFullYear(), now.getMonth() - (3 - index), 1);
+    const months = Array.from({ length: 3 }).map((_, index) => {
+      const date = new Date(now.getFullYear(), now.getMonth() - (2 - index), 1);
       return {
         key: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`,
         label: monthLabels[date.getMonth()],
@@ -105,6 +99,13 @@ export default function DashboardScreen() {
     });
   }
 
+  function formatarMoeda(valor: number) {
+    return (valor / 100).toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
+  }
+
   return (
     <SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: "#3B82F6" }}>
       <ScrollView
@@ -122,7 +123,7 @@ export default function DashboardScreen() {
         <View style={styles.header}>
           <View>
             <Text style={styles.headerTitle}>Saldo Total:</Text>
-            <Text style={styles.headerValue}>R$ {valorFormatado(data.saldo ?? 0)}</Text>
+            <Text style={styles.headerValue}>{formatarMoeda(data.saldo ?? 0)}</Text>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
               <Text style={styles.headerMonth}>
                 {new Date(ano, mes).toLocaleDateString("pt-BR", {
@@ -164,15 +165,15 @@ export default function DashboardScreen() {
               <Text style={styles.cardTitle}>Entradas </Text>
               <ArrowUpCircle size={20} color="#22c55e" />
             </View>
-            <Text style={[styles.cardValue, { color: "#22c55e" }]}>R$ {valorFormatado(data.receitas ?? 0)}</Text>
+            <Text style={[styles.cardValue, { color: "#22c55e" }]}>{formatarMoeda(data.receitas ?? 0)}</Text>
           </View>
 
           <View style={styles.card}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 4, justifyContent: "space-between" }}>
-              <Text style={styles.cardTitle}>Saidas</Text>
+              <Text style={styles.cardTitle}>Saídas</Text>
               <ArrowDownCircle size={20} color="#ef4444" />
             </View>
-            <Text style={[styles.cardValue, { color: "#ef4444" }]}>R$ {valorFormatado(data.despesas ?? 0)}</Text>
+            <Text style={[styles.cardValue, { color: "#ef4444" }]}>{formatarMoeda(data.despesas ?? 0)}</Text>
           </View>
         </View>
 
@@ -187,17 +188,23 @@ export default function DashboardScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Acoes Rapidas</Text>
+          <Text style={styles.sectionTitle}>Ações Rápidas</Text>
 
           <View style={styles.quickActionsRow}>
-            <TouchableOpacity style={[styles.quickAction]} onPress={() => navigation.navigate("Transacoes")}>
+            <TouchableOpacity
+              style={[styles.quickAction]}
+              onPress={() => navigation.navigate("NovaTransacao", { tipo: "despesa" })}
+            >
               <View style={[styles.boxIcon, { backgroundColor: "#EEF2FF" }]}>
                 <Minus color="#4F46E5" />
               </View>
               <Text style={styles.quickLabel}>Despesa</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.quickAction}>
+            <TouchableOpacity
+              style={styles.quickAction}
+              onPress={() => navigation.navigate("NovaTransacao", { tipo: "receita" })}
+            >
               <View style={[styles.boxIcon, { backgroundColor: "#ECFDF5" }]}>
                 <Plus color="#22C55E" />
               </View>
@@ -211,7 +218,7 @@ export default function DashboardScreen() {
               <Text style={styles.quickLabel}>Objetivo</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.quickAction} onPress={() => navigation.navigate("Graficos")}>
+            <TouchableOpacity style={styles.quickAction} onPress={() => navigation.navigate("Gráficos")}>
               <View style={[styles.boxIcon, { backgroundColor: "#FFF7ED" }]}>
                 <FileText color="#F97316" />
               </View>
@@ -219,20 +226,33 @@ export default function DashboardScreen() {
             </TouchableOpacity>
           </View>
         </View>
-
         <View style={styles.sectionIA}>
-          <View style={styles.sectionIA}>
-            <View style={styles.insightHeader}>
-              <Text style={styles.sectionTitle}>Insights da IA</Text>
+          <View style={styles.insightHeader}>
+            <Text style={styles.sectionTitle}>Insights da IA</Text>
+            {insights.length > 0 && (
               <View style={styles.badgeNew}>
                 <Text style={styles.badgeText}>NOVO</Text>
               </View>
-            </View>
-            <View style={styles.insightCard}>
-              <Text style={styles.insightEmoji}>✨</Text>
-              <Text style={styles.insightText}> Parabens! Voce reduziu seus gastos em 100% este mes. </Text>
-            </View>
+            )}
           </View>
+          {insights.length === 0 ? (
+            <View style={styles.insightCard}>
+              <Text style={styles.insightEmoji}>!</Text>
+              <Text style={styles.insightText}>Sem insights por enquanto.</Text>
+            </View>
+          ) : (
+            insights.map((insight: any) => (
+              <View key={insight.id} style={styles.insightCard}>
+                <Text style={styles.insightEmoji}>
+                  {insight.tipo === "objetivo" ? <DollarSign /> : <AlertTriangle />}
+                </Text>
+                <View style={styles.insightContent}>
+                  <Text style={styles.insightTitle}>{insight.titulo}</Text>
+                  <Text style={styles.insightText}>{insight.mensagem}</Text>
+                </View>
+              </View>
+            ))
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -400,7 +420,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 
-  /* INSIGHTS */
   sectionIA: {
     marginTop: 18,
     marginHorizontal: 20,
@@ -428,16 +447,31 @@ const styles = StyleSheet.create({
   },
 
   insightCard: {
-    backgroundColor: "#F4EEFF",
+    backgroundColor: "#f3ecff",
     padding: 16,
     borderRadius: 16,
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
+    marginBottom: 10
+  },
+
+  insightContent: {
+    flex: 1,
+  },
+
+  insightTitle: {
+    color: "#333",
+    fontSize: 14,
+    fontWeight: "700",
+    marginBottom: 2,
   },
 
   insightEmoji: {
     fontSize: 20,
+    padding: 15,
+    backgroundColor: "#e4c5ff",
+    borderRadius: 8
   },
 
   insightText: {
@@ -452,6 +486,8 @@ const styles = StyleSheet.create({
     justifyContent: "center"
   }
 });
+
+
 
 
 

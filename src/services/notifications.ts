@@ -35,3 +35,13 @@ export async function updateNotificationPreferences(
     token
   );
 }
+
+export async function registrarPushToken(tokenPush: string) {
+  const token = await getToken();
+  return apiRequest(
+    "/notifications/push-token",
+    "POST",
+    { token: tokenPush },
+    token
+  );
+}

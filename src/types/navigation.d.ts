@@ -9,7 +9,7 @@
   ExportData: undefined;
   About: undefined;
   Transacoes: undefined;
-  NovaTransacao: { id?: string } | undefined;
+  NovaTransacao: { id?: string; tipo?: "despesa" | "receita" } | undefined;
   TransacaoDetalhe: { id: string };
   Objetivos: undefined;
   ObjetivoForm: { id?: string } | undefined;

@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  Image,
 } from "react-native";
 import {
   User,
@@ -76,7 +77,11 @@ export default function ConfigScreen() {
             activeOpacity={0.8}
           >
             <View style={styles.avatar}>
-              <User size={28} color="#FFF" />
+              {user?.fotoPerfil ? (
+                <Image source={{ uri: user.fotoPerfil }} style={styles.avatarImage} />
+              ) : (
+                <User size={28} color="#FFF" />
+              )}
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.userName}>{user?.nome}</Text>
@@ -97,7 +102,7 @@ export default function ConfigScreen() {
           <TouchableOpacity style={styles.item} onPress={handleSecurity}>
             <View style={styles.itemLeft}>
               <ShieldCheck size={20} color="#3B82F6" />
-              <Text style={styles.itemText}>Seguranca</Text>
+              <Text style={styles.itemText}>Segurança</Text>
             </View>
             <ChevronRight size={20} color="#999" />
           </TouchableOpacity>
@@ -107,7 +112,7 @@ export default function ConfigScreen() {
           <TouchableOpacity style={styles.item} onPress={handleNotifications}>
             <View style={styles.itemLeft}>
               <Bell size={20} color="#3B82F6" />
-              <Text style={styles.itemText}>Notificacoes</Text>
+              <Text style={styles.itemText}>Notificações</Text>
             </View>
             <ChevronRight size={20} color="#999" />
           </TouchableOpacity>
@@ -173,6 +178,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginRight: 16,
+  },
+  avatarImage: {
+    width: 55,
+    height: 55,
+    borderRadius: 28,
   },
   userName: {
     color: "#FFF",

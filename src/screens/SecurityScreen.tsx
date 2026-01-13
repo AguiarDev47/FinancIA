@@ -6,8 +6,6 @@ import {
   TouchableOpacity,
   ScrollView,
   Switch,
-  Modal,
-  TextInput,
   ActivityIndicator,
   Alert,
 } from "react-native";
@@ -19,7 +17,6 @@ import {
   Fingerprint,
   Key,
   ChevronRight,
-  X,
 } from "lucide-react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as LocalAuthentication from "expo-local-authentication";
@@ -33,6 +30,11 @@ import {
   revokeOtherSessions,
   revokeSession,
 } from "../services/security";
+import { getErrorMessage } from "../utils/errors";
+import ChangePasswordModal from "../modais/ChangePasswordModal";
+import TwoFactorModal from "../modais/TwoFactorModal";
+import DisableTwoFactorModal from "../modais/DisableTwoFactorModal";
+import SessionsModal from "../modais/SessionsModal";
 
 export default function SecurityScreen({ navigation }: any) {
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
@@ -74,7 +76,7 @@ export default function SecurityScreen({ navigation }: any) {
       );
       setBiometria(biometriaStorage === "true");
     } catch (err: any) {
-      Alert.alert("Erro", err.message || "Nao foi possivel carregar");
+      Alert.alert("Erro", getErrorMessage(err, "Nao foi possivel carregar."));
     }
   }
 
@@ -90,7 +92,7 @@ export default function SecurityScreen({ navigation }: any) {
       setTwoFactorTokenId(result.tokenId);
       setTwoFactorModalVisible(true);
     } catch (err: any) {
-      Alert.alert("Erro", err.message || "Nao foi possivel ativar");
+      Alert.alert("Erro", getErrorMessage(err, "Nao foi possivel ativar."));
     } finally {
       setLoading(false);
     }
@@ -106,7 +108,7 @@ export default function SecurityScreen({ navigation }: any) {
       setTwoFactorTokenId(null);
       setTwoFactorModalVisible(false);
     } catch (err: any) {
-      Alert.alert("Erro", err.message || "Codigo invalido");
+      Alert.alert("Erro", getErrorMessage(err, "Codigo invalido."));
     } finally {
       setLoading(false);
     }
@@ -120,7 +122,10 @@ export default function SecurityScreen({ navigation }: any) {
       setDisablePassword("");
       setDisableTwoFactorVisible(false);
     } catch (err: any) {
-      Alert.alert("Erro", err.message || "Nao foi possivel desativar");
+      Alert.alert(
+        "Erro",
+        getErrorMessage(err, "Nao foi possivel desativar.")
+      );
     } finally {
       setLoading(false);
     }
@@ -168,7 +173,7 @@ export default function SecurityScreen({ navigation }: any) {
       setChangePasswordVisible(false);
       Alert.alert("Senha alterada", "Sua senha foi atualizada.");
     } catch (err: any) {
-      Alert.alert("Erro", err.message || "Nao foi possivel alterar");
+      Alert.alert("Erro", getErrorMessage(err, "Nao foi possivel alterar."));
     } finally {
       setLoading(false);
     }
@@ -182,7 +187,7 @@ export default function SecurityScreen({ navigation }: any) {
       setSessions(result.sessions || []);
       setSessionsVisible(true);
     } catch (err: any) {
-      Alert.alert("Erro", err.message || "Nao foi possivel carregar");
+      Alert.alert("Erro", getErrorMessage(err, "Nao foi possivel carregar."));
     } finally {
       setSessionsLoading(false);
     }
@@ -193,7 +198,7 @@ export default function SecurityScreen({ navigation }: any) {
       await revokeSession(id);
       setSessions((prev) => prev.filter((session) => session.id !== id));
     } catch (err: any) {
-      Alert.alert("Erro", err.message || "Nao foi possivel deslogar");
+      Alert.alert("Erro", getErrorMessage(err, "Nao foi possivel deslogar."));
     }
   }
 
@@ -204,7 +209,7 @@ export default function SecurityScreen({ navigation }: any) {
         prev.filter((session) => session.id === currentSessionId)
       );
     } catch (err: any) {
-      Alert.alert("Erro", err.message || "Nao foi possivel deslogar");
+      Alert.alert("Erro", getErrorMessage(err, "Nao foi possivel deslogar."));
     }
   }
 
@@ -240,9 +245,9 @@ export default function SecurityScreen({ navigation }: any) {
               <ShieldCheck size={20} color="#22C55E" />
             </View>
             <View style={styles.cardText}>
-              <Text style={styles.cardTitle}>Autenticacao em Duas Etapas</Text>
+              <Text style={styles.cardTitle}>Autenticação em Duas Etapas</Text>
               <Text style={styles.cardSubtitle}>
-                Codigo enviado por email
+                Código enviado por email
               </Text>
             </View>
             {loading ? (
@@ -284,7 +289,7 @@ export default function SecurityScreen({ navigation }: any) {
               <Key size={20} color="#F97316" />
             </View>
             <View style={styles.cardText}>
-              <Text style={styles.cardTitle}>Sessoes Ativas</Text>
+              <Text style={styles.cardTitle}>Sessões Ativas</Text>
               <Text style={styles.cardSubtitle}>
                 Gerencie seus dispositivos conectados
               </Text>
@@ -298,154 +303,49 @@ export default function SecurityScreen({ navigation }: any) {
         </View>
       </ScrollView>
 
-      <Modal visible={changePasswordVisible} transparent animationType="slide">
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Alterar senha</Text>
-              <TouchableOpacity onPress={() => setChangePasswordVisible(false)}>
-                <X size={18} color="#111827" />
-              </TouchableOpacity>
-            </View>
-            <TextInput
-              placeholder="Senha atual"
-              secureTextEntry
-              style={styles.modalInput}
-              value={senhaAtual}
-              onChangeText={setSenhaAtual}
-            />
-            <TextInput
-              placeholder="Nova senha"
-              secureTextEntry
-              style={styles.modalInput}
-              value={novaSenha}
-              onChangeText={setNovaSenha}
-            />
-            <TextInput
-              placeholder="Confirmar nova senha"
-              secureTextEntry
-              style={styles.modalInput}
-              value={confirmSenha}
-              onChangeText={setConfirmSenha}
-            />
-            <TouchableOpacity style={styles.modalButton} onPress={handleChangePassword}>
-              {loading ? (
-                <ActivityIndicator color="#FFF" />
-              ) : (
-                <Text style={styles.modalButtonText}>Salvar</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+      <ChangePasswordModal
+        visible={changePasswordVisible}
+        loading={loading}
+        senhaAtual={senhaAtual}
+        novaSenha={novaSenha}
+        confirmSenha={confirmSenha}
+        onSenhaAtualChange={setSenhaAtual}
+        onNovaSenhaChange={setNovaSenha}
+        onConfirmSenhaChange={setConfirmSenha}
+        onClose={() => setChangePasswordVisible(false)}
+        onSubmit={handleChangePassword}
+      />
 
-      <Modal visible={twoFactorModalVisible} transparent animationType="fade">
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Confirmar codigo</Text>
-              <TouchableOpacity onPress={() => setTwoFactorModalVisible(false)}>
-                <X size={18} color="#111827" />
-              </TouchableOpacity>
-            </View>
-            <TextInput
-              placeholder="Codigo de 6 digitos"
-              keyboardType="numeric"
-              style={styles.modalInput}
-              value={twoFactorCode}
-              onChangeText={setTwoFactorCode}
-            />
-            <TouchableOpacity style={styles.modalButton} onPress={handleConfirmTwoFactor}>
-              {loading ? (
-                <ActivityIndicator color="#FFF" />
-              ) : (
-                <Text style={styles.modalButtonText}>Confirmar</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
 
-      <Modal visible={disableTwoFactorVisible} transparent animationType="fade">
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Desativar 2FA</Text>
-              <TouchableOpacity
-                onPress={() => setDisableTwoFactorVisible(false)}
-              >
-                <X size={18} color="#111827" />
-              </TouchableOpacity>
-            </View>
-            <TextInput
-              placeholder="Senha atual"
-              secureTextEntry
-              style={styles.modalInput}
-              value={disablePassword}
-              onChangeText={setDisablePassword}
-            />
-            <TouchableOpacity style={styles.modalButton} onPress={handleDisableTwoFactor}>
-              {loading ? (
-                <ActivityIndicator color="#FFF" />
-              ) : (
-                <Text style={styles.modalButtonText}>Desativar</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+      <TwoFactorModal
+        visible={twoFactorModalVisible}
+        loading={loading}
+        code={twoFactorCode}
+        onCodeChange={setTwoFactorCode}
+        onClose={() => setTwoFactorModalVisible(false)}
+        onConfirm={handleConfirmTwoFactor}
+      />
 
-      <Modal visible={sessionsVisible} transparent animationType="slide">
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalCardLarge}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Sessoes ativas</Text>
-              <TouchableOpacity onPress={() => setSessionsVisible(false)}>
-                <X size={18} color="#111827" />
-              </TouchableOpacity>
-            </View>
-            <ScrollView style={{ maxHeight: 320 }}>
-              {sessions.map((session) => {
-                const isCurrent = session.id === currentSessionId;
-                return (
-                  <View key={session.id} style={styles.sessionRow}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.sessionTitle}>
-                        {session.userAgent || "Dispositivo"}
-                      </Text>
-                      <Text style={styles.sessionSubtitle}>
-                        Ultimo acesso:{" "}
-                        {session.ultimoAcesso
-                          ? new Date(session.ultimoAcesso).toLocaleString()
-                          : "-"}
-                      </Text>
-                      {isCurrent && (
-                        <Text style={styles.sessionBadge}>Atual</Text>
-                      )}
-                    </View>
-                    {!isCurrent && (
-                      <TouchableOpacity
-                        style={styles.sessionButton}
-                        onPress={() => handleRevokeSession(session.id)}
-                      >
-                        <Text style={styles.sessionButtonText}>Deslogar</Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                );
-              })}
-              {!sessions.length && (
-                <Text style={styles.emptyText}>Nenhuma sessao ativa.</Text>
-              )}
-            </ScrollView>
-            <TouchableOpacity style={styles.secondaryButton} onPress={handleRevokeOthers}>
-              <Text style={styles.secondaryButtonText}>
-                Deslogar outros dispositivos
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+
+      <DisableTwoFactorModal
+        visible={disableTwoFactorVisible}
+        loading={loading}
+        password={disablePassword}
+        onPasswordChange={setDisablePassword}
+        onClose={() => setDisableTwoFactorVisible(false)}
+        onConfirm={handleDisableTwoFactor}
+      />
+
+
+      <SessionsModal
+        visible={sessionsVisible}
+        sessions={sessions}
+        currentSessionId={currentSessionId}
+        onClose={() => setSessionsVisible(false)}
+        onRevokeSession={handleRevokeSession}
+        onRevokeOthers={handleRevokeOthers}
+      />
+
     </SafeAreaView>
   );
 }
@@ -505,104 +405,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#6B7280",
     marginTop: 4,
-  },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
-    justifyContent: "center",
-    padding: 20,
-  },
-  modalCard: {
-    backgroundColor: "#FFF",
-    borderRadius: 16,
-    padding: 16,
-  },
-  modalCardLarge: {
-    backgroundColor: "#FFF",
-    borderRadius: 16,
-    padding: 16,
-  },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  modalTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#111827",
-  },
-  modalInput: {
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 10,
-  },
-  modalButton: {
-    backgroundColor: "#3B82F6",
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: "center",
-  },
-  modalButtonText: {
-    color: "#FFF",
-    fontWeight: "600",
-  },
-  sessionRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
-  },
-  sessionTitle: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#111827",
-  },
-  sessionSubtitle: {
-    fontSize: 12,
-    color: "#6B7280",
-    marginTop: 4,
-  },
-  sessionBadge: {
-    marginTop: 6,
-    alignSelf: "flex-start",
-    backgroundColor: "#E0ECFF",
-    color: "#2563EB",
-    fontSize: 11,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-  },
-  sessionButton: {
-    backgroundColor: "#FEE2E2",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 10,
-  },
-  sessionButtonText: {
-    color: "#B91C1C",
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  secondaryButton: {
-    marginTop: 12,
-    borderWidth: 1,
-    borderColor: "#F59E0B",
-    paddingVertical: 10,
-    borderRadius: 10,
-    alignItems: "center",
-  },
-  secondaryButtonText: {
-    color: "#B45309",
-    fontWeight: "600",
-  },
-  emptyText: {
-    textAlign: "center",
-    color: "#6B7280",
-    marginTop: 16,
   },
 });

@@ -14,6 +14,7 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import { ArrowLeft } from "lucide-react-native";
 import { apiRequest } from "../services/api";
+import { getErrorMessage } from "../utils/errors";
 
 export default function RegisterScreen() {
   const navigation = useNavigation<any>();
@@ -34,7 +35,7 @@ export default function RegisterScreen() {
       Alert.alert("Sucesso", "Cadastro realizado com sucesso");
       navigation.goBack();
     } catch (err: any) {
-      Alert.alert("Erro", err.message);
+      Alert.alert("Erro", getErrorMessage(err, "Nao foi possivel cadastrar."));
     } finally {
       setLoading(false);
     }

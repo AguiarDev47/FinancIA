@@ -7,15 +7,21 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
+  Modal,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ArrowLeft, CheckCircle2, Download, FileText, CalendarDays, ChevronDown } from "lucide-react-native";
-import * as FileSystem from "expo-file-system";
+import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import { downloadExport, getExportSummary } from "../services/export";
+import { getErrorMessage } from "../utils/errors";
 
 export default function ExportDataScreen({ navigation }: any) {
-  const [periodo, setPeriodo] = useState("Todos os Dados");
+  const [periodo, setPeriodo] = useState({
+    key: "all",
+    label: "Todo histórico",
+  });
+  const [periodoVisible, setPeriodoVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState({ transacoes: 0, objetivos: 0 });
 
@@ -23,27 +29,64 @@ export default function ExportDataScreen({ navigation }: any) {
     loadSummary();
   }, []);
 
-  async function loadSummary() {
+  async function loadSummary(periodKey?: string) {
     try {
-      const data = await getExportSummary();
+      const range = getPeriodRange(periodKey || periodo.key);
+      const data = await getExportSummary(
+        range ? { start: range.start, end: range.end } : undefined
+      );
       setStats({
         transacoes: data.transacoes || 0,
         objetivos: data.objetivos || 0,
       });
     } catch (err: any) {
-      Alert.alert("Erro", err.message || "Nao foi possivel carregar");
+      Alert.alert("Erro", getErrorMessage(err, "Nao foi possivel carregar."));
     }
   }
 
-  async function handleExport(format: "csv" | "json") {
+  function getPeriodRange(key: string) {
+    if (key === "all") return null;
+    const now = new Date();
+    let start: Date;
+    let end: Date;
+
+    if (key === "month") {
+      start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+      end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    } else if (key === "3months") {
+      start = new Date(now.getFullYear(), now.getMonth() - 2, 1, 0, 0, 0, 0);
+      end = new Date();
+    } else if (key === "6months") {
+      start = new Date(now.getFullYear(), now.getMonth() - 5, 1, 0, 0, 0, 0);
+      end = new Date();
+    } else if (key === "year") {
+      start = new Date(now.getFullYear() - 1, now.getMonth(), 1, 0, 0, 0, 0);
+      end = new Date();
+    } else {
+      return null;
+    }
+
+    return {
+      start: start.toISOString(),
+      end: end.toISOString(),
+    };
+  }
+
+  async function handleExport(format: "csv" | "json" | "pdf") {
     try {
       setLoading(true);
-      const result = await downloadExport(format);
-      const ext = format === "csv" ? "csv" : "json";
-      const filename = `financia-export-${Date.now()}.${ext}`;
+      const range = getPeriodRange(periodo.key);
+      const result = await downloadExport(
+        format,
+        range ? { start: range.start, end: range.end } : undefined
+      );
+      const filename = `financia-export-${Date.now()}.${format}`;
       const uri = `${FileSystem.cacheDirectory}${filename}`;
       await FileSystem.writeAsStringAsync(uri, result.text, {
-        encoding: FileSystem.EncodingType.UTF8,
+        encoding:
+          format === "pdf"
+            ? FileSystem.EncodingType?.Base64 ?? "base64"
+            : FileSystem.EncodingType?.UTF8 ?? "utf8",
       });
 
       if (await Sharing.isAvailableAsync()) {
@@ -52,7 +95,7 @@ export default function ExportDataScreen({ navigation }: any) {
         Alert.alert("Exportacao", "Arquivo gerado em: " + uri);
       }
     } catch (err: any) {
-      Alert.alert("Erro", err.message || "Nao foi possivel exportar");
+      Alert.alert("Erro", getErrorMessage(err, "Nao foi possivel exportar."));
     } finally {
       setLoading(false);
     }
@@ -77,16 +120,20 @@ export default function ExportDataScreen({ navigation }: any) {
             <View style={styles.infoText}>
               <Text style={styles.infoTitle}>Seus dados, suas regras</Text>
               <Text style={styles.infoSubtitle}>
-                Exporte todas as suas informacoes financeiras para backup ou migracao.
+                Exporte todas as suas informações financeiras para backup ou migração.
               </Text>
             </View>
           </View>
 
-          <Text style={styles.sectionTitle}>Periodo</Text>
-          <TouchableOpacity style={styles.selectBox} activeOpacity={0.8}>
+          <Text style={styles.sectionTitle}>Período</Text>
+          <TouchableOpacity
+            style={styles.selectBox}
+            activeOpacity={0.8}
+            onPress={() => setPeriodoVisible(true)}
+          >
             <View style={styles.selectLeft}>
               <CalendarDays size={18} color="#3B82F6" />
-              <Text style={styles.selectText}>{periodo}</Text>
+              <Text style={styles.selectText}>{periodo.label}</Text>
             </View>
             <ChevronDown size={18} color="#9CA3AF" />
           </TouchableOpacity>
@@ -96,7 +143,7 @@ export default function ExportDataScreen({ navigation }: any) {
               <View style={[styles.statIcon, { backgroundColor: "#DBEAFE" }]}>
                 <FileText size={18} color="#3B82F6" />
               </View>
-              <Text style={styles.statLabel}>Transacoes</Text>
+              <Text style={styles.statLabel}>Transações</Text>
               <Text style={styles.statValue}>{stats.transacoes}</Text>
             </View>
             <View style={styles.statCard}>
@@ -137,8 +184,54 @@ export default function ExportDataScreen({ navigation }: any) {
               </>
             )}
           </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.pdfButton}
+            onPress={() => handleExport("pdf")}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#FFF" />
+            ) : (
+              <>
+                <Download size={18} color="#FFF" />
+                <Text style={styles.pdfText}>Exportar extrato (PDF)</Text>
+              </>
+            )}
+          </TouchableOpacity>
         </View>
       </ScrollView>
+
+      <Modal visible={periodoVisible} transparent animationType="fade">
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Escolha o periodo</Text>
+            {[
+              { key: "all", label: "Todo historico" },
+              { key: "month", label: "Mes atual" },
+              { key: "3months", label: "Ultimos 3 meses" },
+              { key: "6months", label: "Ultimos 6 meses" },
+              { key: "year", label: "Ultimo ano" },
+            ].map((item) => (
+              <TouchableOpacity
+                key={item.key}
+                style={styles.modalOption}
+                onPress={() => {
+                  setPeriodo(item);
+                  setPeriodoVisible(false);
+                  loadSummary(item.key);
+                }}
+              >
+                <Text style={styles.modalOptionText}>{item.label}</Text>
+                {periodo.key === item.key && <CheckCircle2 size={18} color="#3B82F6" />}
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity onPress={() => setPeriodoVisible(false)}>
+              <Text style={styles.modalCancel}>Cancelar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -285,5 +378,54 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     color: "#FFF",
+  },
+  pdfButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    backgroundColor: "#111827",
+    borderRadius: 16,
+    paddingVertical: 14,
+    marginTop: 12,
+  },
+  pdfText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#FFF",
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    justifyContent: "center",
+    padding: 20,
+  },
+  modalCard: {
+    backgroundColor: "#FFF",
+    borderRadius: 16,
+    padding: 16,
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#111827",
+    marginBottom: 12,
+  },
+  modalOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F3F4F6",
+  },
+  modalOptionText: {
+    fontSize: 14,
+    color: "#111827",
+  },
+  modalCancel: {
+    marginTop: 12,
+    textAlign: "center",
+    color: "#6B7280",
   },
 });

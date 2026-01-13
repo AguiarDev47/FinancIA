@@ -7,14 +7,38 @@ async function getToken() {
   return token;
 }
 
-export async function getExportSummary() {
+export async function getExportSummary(params?: {
+  start?: string;
+  end?: string;
+  period?: string;
+}) {
   const token = await getToken();
-  return apiRequest("/export/summary", "GET", undefined, token);
+  const search = new URLSearchParams();
+  if (params?.start) search.set("start", params.start);
+  if (params?.end) search.set("end", params.end);
+  if (params?.period) search.set("period", params.period);
+  const suffix = search.toString();
+  const path = suffix ? `/export/summary?${suffix}` : "/export/summary";
+  return apiRequest(path, "GET", undefined, token);
 }
 
-export async function downloadExport(format: "csv" | "json") {
+export async function downloadExport(
+  format: "csv" | "json" | "pdf",
+  params?: {
+    start?: string;
+    end?: string;
+    period?: string;
+  }
+) {
   const token = await getToken();
-  const res = await fetch(`${API_URL}/export?format=${format}`, {
+  const search = new URLSearchParams({ format });
+  if (format === "pdf") {
+    search.set("encoding", "base64");
+  }
+  if (params?.start) search.set("start", params.start);
+  if (params?.end) search.set("end", params.end);
+  if (params?.period) search.set("period", params.period);
+  const res = await fetch(`${API_URL}/export?${search.toString()}`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -27,5 +51,5 @@ export async function downloadExport(format: "csv" | "json") {
 
   const contentType = res.headers.get("content-type") || "";
   const text = await res.text();
-  return { text, contentType };
+  return { text, contentType, isBase64: format === "pdf" };
 }

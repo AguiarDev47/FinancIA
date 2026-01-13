@@ -45,6 +45,13 @@ export default function ObjetivosScreen() {
     return Math.round((obj.economizado / obj.meta) * 100);
   }
 
+  function formatarMoeda(valor: number) {
+    return valor.toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
+  }
+
   function iconeObjetivo(nome: string) {
     if (nome.toLowerCase().includes("viagem")) {
       return <Plane size={26} color="#FFF" />;
@@ -81,7 +88,8 @@ export default function ObjetivosScreen() {
 
         <View style={{ paddingHorizontal: 20 }}>
           {objetivos.map((obj) => {
-            const perc = percentual(obj);
+            const percRaw = percentual(obj);
+            const perc = Math.min(100, Math.max(0, percRaw));
 
             return (
               <TouchableOpacity
@@ -128,14 +136,14 @@ export default function ObjetivosScreen() {
                     <View>
                       <Text style={styles.valueLabel}>Economizado</Text>
                       <Text style={styles.valueMoney}>
-                        R$ {obj.economizado.toLocaleString("pt-BR")}
+                        {formatarMoeda(obj.economizado)}
                       </Text>
                     </View>
 
                     <View>
                       <Text style={styles.valueLabel}>Faltam</Text>
                       <Text style={styles.valueMoney}>
-                        R$ {(obj.meta - obj.economizado).toLocaleString("pt-BR")}
+                        {formatarMoeda(Math.max(obj.meta - obj.economizado, 0))}
                       </Text>
                     </View>
                   </View>
@@ -176,12 +184,12 @@ const styles = StyleSheet.create({
   },
 
   addButton: {
-    backgroundColor: "#3B82F6",
-    width: 60,
-    height: 60,
-    borderRadius: 50,
-    justifyContent: "center",
+    backgroundColor: "#2563EB",
+    width: 48,
+    height: 48,
+    borderRadius: 14,
     alignItems: "center",
+    justifyContent: "center",
     elevation: 2,
   },
 
@@ -232,11 +240,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#E5E7EB",
     borderRadius: 6,
     marginTop: 6,
+    overflow: "hidden",
   },
 
   progressFill: {
     height: 8,
     borderRadius: 6,
+    backgroundColor: "#3B82F6",
   },
 
   valuesRow: {

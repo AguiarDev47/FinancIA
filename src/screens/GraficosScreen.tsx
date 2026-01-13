@@ -25,13 +25,20 @@ export default function GraficosScreen() {
     }
   }
 
+  function formatarMoeda(valor: number) {
+    return (valor / 100).toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
+  }
+
   return (
     <SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: "#FFF" }}>
       <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 120 }}>
         <View style={{ backgroundColor: "#FFF", paddingHorizontal: 20, paddingBottom: 20 }}>
           <Text style={styles.title}>Categorias</Text>
 
-          {/* FILTROS */}
+          
           <View style={styles.filterContainer}>
             {["mes", "3meses", "todos"].map((tipo) => (
               <TouchableOpacity
@@ -50,7 +57,7 @@ export default function GraficosScreen() {
         </View>
 
         <View style={{ paddingHorizontal: 20 }}>
-          {/* DONUT */}
+          
           <View style={styles.chartCard}>
             <Text style={styles.chartTitle}>Distribuição de Gastos</Text>
 
@@ -68,7 +75,7 @@ export default function GraficosScreen() {
             )}
           </View>
 
-          {/* LISTA */}
+          
           {categorias.map((c) => (
             <View style={styles.categoryCard} key={c.id}>
               <View style={{ flexDirection: "row", alignItems: "center" }}>
@@ -77,7 +84,7 @@ export default function GraficosScreen() {
               </View>
 
               <View>
-                <Text style={styles.categoryValue}>R$ {c.valor.toFixed(2)}</Text>
+                <Text style={styles.categoryValue}>{formatarMoeda(c.valor)}</Text>
                 <Text style={styles.categoryPercent}>{c.percentual}%</Text>
               </View>
 

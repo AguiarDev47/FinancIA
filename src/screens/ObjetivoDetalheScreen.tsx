@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
   View,
   Text,
@@ -8,12 +8,20 @@ import {
   Modal,
   TextInput,
   ActivityIndicator,
+  Alert,
 } from "react-native";
-import { ArrowLeft, DollarSign, Plus } from "lucide-react-native";
+import { ArrowLeft, DollarSign, Plus, Pencil, Trash2 } from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRoute } from "@react-navigation/native";
-import { buscarObjetivoPorId, criarAporte, Aporte, Objetivo } from "../services/objetivos";
+import { useFocusEffect, useRoute } from "@react-navigation/native";
+import {
+  buscarObjetivoPorId,
+  criarAporte,
+  deletarObjetivo,
+  Aporte,
+  Objetivo,
+} from "../services/objetivos";
+import { getErrorMessage } from "../utils/errors";
 
 export default function ObjetivoDetalheScreen({ navigation }: any) {
   const route = useRoute<any>();
@@ -29,14 +37,21 @@ export default function ObjetivoDetalheScreen({ navigation }: any) {
     try {
       const data = await buscarObjetivoPorId(id);
       setObjetivo(data);
+    } catch (err: any) {
+      Alert.alert(
+        "Erro",
+        getErrorMessage(err, "Nao foi possivel carregar o objetivo.")
+      );
     } finally {
       setLoading(false);
     }
   }
 
-  useEffect(() => {
-    carregar();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      carregar();
+    }, [])
+  );
 
   if (loading || !objetivo) {
     return (
@@ -53,6 +68,13 @@ export default function ObjetivoDetalheScreen({ navigation }: any) {
   const falta = objetivo.meta - objetivo.economizado;
 
   function formatarMoeda(valor: number) {
+    return valor.toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
+  }
+
+  function formatarMoedaCentavos(valor: number) {
     return (valor / 100).toLocaleString("pt-BR", {
       style: "currency",
       currency: "BRL",
@@ -66,11 +88,51 @@ export default function ObjetivoDetalheScreen({ navigation }: any) {
           colors={["#5B8CFF", "#8B5CF6"]}
           style={styles.header}
         >
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <View style={styles.headerTop}>
             <TouchableOpacity onPress={() => navigation.goBack()}>
               <ArrowLeft size={24} color="#FFF" />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Detalhes do Objetivo</Text>
+            <View style={styles.headerActions}>
+              <TouchableOpacity
+                style={styles.headerIcon}
+                onPress={() => navigation.navigate("ObjetivoForm", { id })}
+              >
+                <Pencil size={18} color="#FFF" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.headerIcon}
+                onPress={() => {
+                  Alert.alert(
+                    "Excluir objetivo",
+                    "Tem certeza que deseja excluir este objetivo?",
+                    [
+                      { text: "Cancelar", style: "cancel" },
+                      {
+                        text: "Excluir",
+                        style: "destructive",
+                        onPress: async () => {
+                          try {
+                            await deletarObjetivo(id);
+                            navigation.goBack();
+                          } catch (e: any) {
+                            Alert.alert(
+                              "Erro",
+                              getErrorMessage(
+                                e,
+                                "Nao foi possivel excluir o objetivo."
+                              )
+                            );
+                          }
+                        },
+                      },
+                    ]
+                  );
+                }}
+              >
+                <Trash2 size={18} color="#FFF" />
+              </TouchableOpacity>
+            </View>
           </View>
 
           <View style={styles.card}>
@@ -91,14 +153,14 @@ export default function ObjetivoDetalheScreen({ navigation }: any) {
               <View>
                 <Text style={styles.valueLabel}>Economizado</Text>
                 <Text style={styles.valueMoney}>
-                  R$ {objetivo.economizado.toLocaleString("pt-BR")}
+                  {formatarMoeda(objetivo.economizado)}
                 </Text>
               </View>
 
               <View>
                 <Text style={styles.valueLabel}>Meta</Text>
                 <Text style={styles.valueMoney}>
-                  R$ {objetivo.meta.toLocaleString("pt-BR")}
+                  {formatarMoeda(objetivo.meta)}
                 </Text>
               </View>
             </View>
@@ -126,14 +188,14 @@ export default function ObjetivoDetalheScreen({ navigation }: any) {
           <View style={styles.summaryCard}>
             <Text style={styles.summaryLabel}>Total Depositado</Text>
             <Text style={styles.summaryValue}>
-              R$ {objetivo.economizado.toLocaleString("pt-BR")}
+              {formatarMoeda(objetivo.economizado)}
             </Text>
           </View>
 
           <View style={styles.summaryCard}>
             <Text style={styles.summaryLabel}>Falta</Text>
             <Text style={styles.summaryValue}>
-              R$ {falta.toLocaleString("pt-BR")}
+              {formatarMoeda(falta)}
             </Text>
           </View>
         </View>
@@ -152,7 +214,7 @@ export default function ObjetivoDetalheScreen({ navigation }: any) {
                   </View>
                   <View>
                     <Text style={styles.aporteValor}>
-                      + R$ {aporte.valor.toLocaleString("pt-BR")}
+                      + {formatarMoeda(aporte.valor)}
                     </Text>
                     <Text style={styles.aporteData}>
                       {new Date(aporte.data).toLocaleDateString("pt-BR")}
@@ -176,7 +238,7 @@ export default function ObjetivoDetalheScreen({ navigation }: any) {
 
             <TextInput
               keyboardType="numeric"
-              value={formatarMoeda(valorCentavos)}
+              value={formatarMoedaCentavos(valorCentavos)}
               onChangeText={(text) => {
                 const apenasNumeros = text.replace(/\D/g, "");
                 setValorCentavos(Number(apenasNumeros));
@@ -209,8 +271,14 @@ export default function ObjetivoDetalheScreen({ navigation }: any) {
                     setModalVisible(false);
                     setValorCentavos(0);
                     carregar();
-                  } catch (e) {
-                    console.error("Erro ao aportar", e);
+                  } catch (e: any) {
+                    Alert.alert(
+                      "Erro",
+                      getErrorMessage(
+                        e,
+                        "Nao foi possivel salvar o aporte."
+                      )
+                    );
                   }
                 }}
               >
@@ -233,9 +301,31 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 30,
   },
 
+  headerTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    justifyContent: "space-between",
+  },
+
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+
+  headerIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
   headerTitle: {
     color: "#FFF",
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: "700",
   },
 

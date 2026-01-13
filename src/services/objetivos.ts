@@ -46,6 +46,19 @@ export async function criarObjetivo(data: {
   return apiRequest("/objetivos", "POST", data, token);
 }
 
+export async function atualizarObjetivo(
+  id: string,
+  data: {
+    nome?: string;
+    meta?: number;
+    economizado?: number;
+    dataLimite?: string;
+  }
+) {
+  const token = await getToken();
+  return apiRequest(`/objetivos/${id}`, "PUT", data, token);
+}
+
 export async function criarAporte(
   objetivoId: string,
   valor: number

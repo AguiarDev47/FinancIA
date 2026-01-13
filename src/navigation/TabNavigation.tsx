@@ -34,8 +34,8 @@ export default function TabNavigator() {
           let icon;
 
           if (route.name === "Dashboard") icon = <Home size={24} color={color} />;
-          if (route.name === "Transacoes") icon = <Receipt size={24} color={color} />;
-          if (route.name === "Graficos") icon = <PieChart size={24} color={color} />;
+          if (route.name === "Transações") icon = <Receipt size={24} color={color} />;
+          if (route.name === "Gráficos") icon = <PieChart size={24} color={color} />;
           if (route.name === "Objetivos") icon = <Target size={24} color={color} />;
           if (route.name === "Config") icon = <Settings size={24} color={color} />;
 
@@ -50,19 +50,10 @@ export default function TabNavigator() {
       })}
     >
       <Tab.Screen name="Dashboard" component={DashboardScreen} />
-      <Tab.Screen name="Transacoes" component={TransacoesScreen} />
-      <Tab.Screen name="Graficos" component={GraficosScreen} />
+      <Tab.Screen name="Transações" component={TransacoesScreen} />
+      <Tab.Screen name="Gráficos" component={GraficosScreen} />
       <Tab.Screen name="Objetivos" component={ObjetivosScreen} />
       <Tab.Screen name="Config" component={ConfigScreen} />
     </Tab.Navigator>
-  );
-}
-
-// Placeholder temporário
-function Placeholder() {
-  return (
-    <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-      <Text>Em breve...</Text>
-    </View>
   );
 }

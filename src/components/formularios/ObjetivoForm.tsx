@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -17,7 +17,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp, useRoute } from "@react-navigation/native";
 import { RootStackParamList } from "../../types/navigation";
-import { criarObjetivo } from "../../services/objetivos";
+import {
+  atualizarObjetivo,
+  buscarObjetivoPorId,
+  criarObjetivo,
+} from "../../services/objetivos";
+import { getErrorMessage } from "../../utils/errors";
 
 type Nav = NativeStackNavigationProp<
   RootStackParamList,
@@ -46,25 +51,71 @@ export default function ObjetivoForm({ navigation }: Props) {
 
   const categorias = ["Viagem", "Estudos", "Emergência", "Saúde"];
 
+  useEffect(() => {
+    let ativo = true;
+
+    async function carregar() {
+      if (!objetivoId) {
+        return;
+      }
+
+      try {
+        const data = await buscarObjetivoPorId(objetivoId);
+        if (!ativo) return;
+        setObjetivo(data.nome || "");
+        setValorAlvo(String(Math.round((data.meta || 0) * 100)));
+        setValorAtual(String(Math.round((data.economizado || 0) * 100)));
+        setData(new Date(data.dataLimite));
+      } catch (err: any) {
+        Alert.alert(
+          "Erro",
+          getErrorMessage(err, "Nao foi possivel carregar o objetivo.")
+        );
+      }
+    }
+
+    carregar();
+    return () => {
+      ativo = false;
+    };
+  }, [objetivoId]);
+
   async function handleSalvar() {
-    if (!objetivo || !valorAlvo || !categoria) return;
+    if (!objetivo || !valorAlvo || (!categoria && !objetivoId)) {
+      Alert.alert("Erro", "Preencha todos os campos obrigatorios.");
+      return;
+    }
 
     const payload = {
       nome: objetivo,
-      meta: Number(valorAlvo.replace(",", ".")),
-      economizado: Number(valorAtual.replace(",", ".")) || 0,
+      meta: Number(valorAlvo || "0") / 100,
+      economizado: Number(valorAtual || "0") / 100 || 0,
       dataLimite: data.toISOString(),
     };
 
     try {
       setSaving(true);
-      await criarObjetivo(payload);
+      if (objetivoId) {
+        await atualizarObjetivo(objetivoId, payload);
+      } else {
+        await criarObjetivo(payload);
+      }
       navigation.goBack();
     } catch (err: any) {
-      Alert.alert("Erro", err?.message || "Nao foi possivel criar o objetivo");
+      Alert.alert(
+        "Erro",
+        getErrorMessage(err, "Nao foi possivel salvar o objetivo.")
+      );
     } finally {
       setSaving(false);
     }
+  }
+
+  function formatarMoeda(valor: number) {
+    return (valor / 100).toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
   }
 
   return (
@@ -109,24 +160,22 @@ export default function ObjetivoForm({ navigation }: Props) {
 
             <Text style={styles.label}>Valor Alvo</Text>
             <View style={styles.valorBox}>
-              <Text style={styles.rs}>R$</Text>
               <TextInput
                 placeholder="0,00"
                 keyboardType="numeric"
-                value={valorAlvo}
-                onChangeText={setValorAlvo}
+                value={formatarMoeda(Number(valorAlvo || "0"))}
+                onChangeText={(text) => setValorAlvo(text.replace(/\D/g, ""))}
                 style={styles.valorInput}
               />
             </View>
 
             <Text style={styles.label}>Valor Atual</Text>
             <View style={styles.valorBox}>
-              <Text style={styles.rs}>R$</Text>
               <TextInput
                 placeholder="0,00"
                 keyboardType="numeric"
-                value={valorAtual}
-                onChangeText={setValorAtual}
+                value={formatarMoeda(Number(valorAtual || "0"))}
+                onChangeText={(text) => setValorAtual(text.replace(/\D/g, ""))}
                 style={styles.valorInput}
               />
             </View>

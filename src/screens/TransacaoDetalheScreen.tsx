@@ -58,6 +58,13 @@ export default function TransacaoDetalheScreen() {
 
   const isDespesa = transacao.tipo === "despesa";
 
+  function formatarMoeda(valor: number) {
+    return (valor / 100).toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
+  }
+
   return (
     <SafeAreaView edges={["top"]} style={styles.safe}>
       <View style={styles.header}>
@@ -69,7 +76,7 @@ export default function TransacaoDetalheScreen() {
         <View style={{ width: 26 }} />
       </View>
       <View style={styles.container}>
-        {/* CARD PRINCIPAL */}
+        
         <View style={styles.card}>
           <Text style={styles.descricao}>
             {transacao.descricao || transacao.categoria.nome}
@@ -81,7 +88,7 @@ export default function TransacaoDetalheScreen() {
               { color: isDespesa ? "#EF4444" : "#22C55E" },
             ]}
           >
-            {isDespesa ? "-" : "+"} R$ {transacao.valor.toFixed(2)}
+            {isDespesa ? "-" : "+"} R$ {formatarMoeda(transacao.valor.toFixed(2))}
           </Text>
         </View>
 
@@ -122,9 +129,6 @@ export default function TransacaoDetalheScreen() {
   );
 }
 
-/* =======================
-   COMPONENTE AUXILIAR
-======================= */
 function Detail({ label, value }: { label: string; value: string }) {
   return (
     <View style={styles.detailRow}>
@@ -134,9 +138,6 @@ function Detail({ label, value }: { label: string; value: string }) {
   );
 }
 
-/* =======================
-   STYLES
-======================= */
 const styles = StyleSheet.create({
   safe: {
     flex: 1,

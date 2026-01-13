@@ -7,6 +7,16 @@ export interface DashboardResumo {
   despesas: number;
   ultimasTransacoes: any[];
   objetivos: any[];
+  insights: DashboardInsight[];
+}
+
+export interface DashboardInsight {
+  id: string;
+  tipo: string;
+  titulo: string;
+  mensagem: string;
+  criadoEm: string;
+  expiraEm: string;
 }
 
 async function getToken() {

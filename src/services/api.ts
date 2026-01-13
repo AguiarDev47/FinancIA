@@ -1,4 +1,8 @@
-export const API_URL = "http://192.168.1.104:3333";
+import { ApiError } from "../utils/errors";
+
+export const API_URL = "http://10.0.2.2:3333";
+
+import { emitUnauthorized } from "../utils/authEvents";
 
 export async function apiRequest<T = any>(
   path: string,
@@ -18,7 +22,14 @@ export async function apiRequest<T = any>(
   const data = await res.json().catch(() => null);
 
   if (!res.ok) {
-    throw new Error(data?.error || "Erro inesperado");
+    if (res.status === 401) {
+      emitUnauthorized();
+    }
+    throw new ApiError(
+      data?.error || "Erro inesperado",
+      data?.code,
+      res.status
+    );
   }
 
   return data as T;

@@ -10,12 +10,15 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  Modal,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { AuthContext } from "../contexts/AuthContext";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../types/navigation";
+import { requestPasswordReset, resetPassword } from "../services/auth";
+import { getErrorMessage } from "../utils/errors";
 
 export default function LoginScreen() {
   const { signIn, verifyTwoFactor } = useContext(AuthContext);
@@ -28,35 +31,15 @@ export default function LoginScreen() {
   const [twoFactorCode, setTwoFactorCode] = useState("");
   const [twoFactorEmail, setTwoFactorEmail] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resetModalVisible, setResetModalVisible] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetTokenId, setResetTokenId] = useState<string | null>(null);
+  const [resetCode, setResetCode] = useState("");
+  const [resetSenha, setResetSenha] = useState("");
+  const [resetConfirm, setResetConfirm] = useState("");
 
   type Nav = NativeStackNavigationProp<RootStackParamList, "Login">;
   const navigation = useNavigation<Nav>();
-
-  function formatError(err: any) {
-    if (!err) return "Erro desconhecido";
-    if (typeof err === "string") return err;
-    const details = [
-      err.name ? `name: ${err.name}` : null,
-      err.message ? `message: ${err.message}` : null,
-      err.code ? `code: ${err.code}` : null,
-      err.status ? `status: ${err.status}` : null,
-    ].filter(Boolean);
-
-    let extra = "";
-    try {
-      extra = JSON.stringify(err);
-    } catch {
-      extra = String(err);
-    }
-
-    const lines = [
-      details.length ? details.join("\n") : null,
-      extra && extra !== "{}" ? `raw: ${extra}` : null,
-      err.stack ? `stack: ${err.stack}` : null,
-    ].filter(Boolean);
-
-    return lines.join("\n");
-  }
 
   async function handleLogin() {
     try {
@@ -67,7 +50,7 @@ export default function LoginScreen() {
         setTwoFactorEmail(result.email || "");
       }
     } catch (err: any) {
-      Alert.alert("Erro", formatError(err) || "Nao foi possivel entrar");
+      Alert.alert("Erro", getErrorMessage(err, "Nao foi possivel entrar."));
     } finally {
       setLoading(false);
     }
@@ -82,7 +65,63 @@ export default function LoginScreen() {
       setTwoFactorTokenId(null);
       setTwoFactorEmail("");
     } catch (err: any) {
-      Alert.alert("Erro", formatError(err) || "Codigo invalido");
+      Alert.alert("Erro", getErrorMessage(err, "Codigo invalido."));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleRequestReset() {
+    if (!resetEmail) {
+      Alert.alert("Erro", "Informe o e-mail.");
+      return;
+    }
+    try {
+      setLoading(true);
+      const result = await requestPasswordReset(resetEmail);
+      if (!result?.tokenId) {
+        Alert.alert(
+          "Redefinicao",
+          "Se o e-mail existir, enviamos um codigo."
+        );
+        return;
+      }
+      setResetTokenId(result.tokenId);
+      Alert.alert(
+        "Redefinicao",
+        `Enviamos um codigo para ${result.email || "seu email"}.`
+      );
+    } catch (err: any) {
+      Alert.alert("Erro", getErrorMessage(err, "Nao foi possivel enviar."));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleResetPassword() {
+    if (!resetTokenId) return;
+    if (!resetCode || !resetSenha) {
+      Alert.alert("Erro", "Preencha codigo e nova senha.");
+      return;
+    }
+    if (resetSenha !== resetConfirm) {
+      Alert.alert("Erro", "As senhas nao conferem.");
+      return;
+    }
+    try {
+      setLoading(true);
+      await resetPassword(resetTokenId, resetCode, resetSenha);
+      Alert.alert("Senha atualizada", "Entre com a nova senha.");
+      setResetModalVisible(false);
+      setResetTokenId(null);
+      setResetCode("");
+      setResetSenha("");
+      setResetConfirm("");
+    } catch (err: any) {
+      Alert.alert(
+        "Erro",
+        getErrorMessage(err, "Nao foi possivel redefinir.")
+      );
     } finally {
       setLoading(false);
     }
@@ -167,6 +206,88 @@ export default function LoginScreen() {
           </TouchableOpacity>
         </View>
       )}
+
+      {!twoFactorTokenId && (
+        <TouchableOpacity onPress={() => setResetModalVisible(true)}>
+          <Text style={styles.forgotText}>Esqueci a senha</Text>
+        </TouchableOpacity>
+      )}
+
+      <Modal visible={resetModalVisible} transparent animationType="fade">
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Redefinir senha</Text>
+
+            {!resetTokenId ? (
+              <>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Seu Email"
+                  autoCapitalize="none"
+                  value={resetEmail}
+                  onChangeText={setResetEmail}
+                />
+                <TouchableOpacity
+                  style={styles.modalButton}
+                  onPress={handleRequestReset}
+                >
+                  {loading ? (
+                    <ActivityIndicator color="#FFF" />
+                  ) : (
+                    <Text style={styles.modalButtonText}>Enviar codigo</Text>
+                  )}
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Codigo de 6 digitos"
+                  keyboardType="numeric"
+                  value={resetCode}
+                  onChangeText={setResetCode}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Nova senha"
+                  secureTextEntry
+                  value={resetSenha}
+                  onChangeText={setResetSenha}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Confirmar nova senha"
+                  secureTextEntry
+                  value={resetConfirm}
+                  onChangeText={setResetConfirm}
+                />
+                <TouchableOpacity
+                  style={styles.modalButton}
+                  onPress={handleResetPassword}
+                >
+                  {loading ? (
+                    <ActivityIndicator color="#FFF" />
+                  ) : (
+                    <Text style={styles.modalButtonText}>Salvar</Text>
+                  )}
+                </TouchableOpacity>
+              </>
+            )}
+
+            <TouchableOpacity
+              onPress={() => {
+                setResetModalVisible(false);
+                setResetTokenId(null);
+                setResetCode("");
+                setResetSenha("");
+                setResetConfirm("");
+              }}
+            >
+              <Text style={styles.modalCancel}>Cancelar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -231,5 +352,42 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     textAlign: "center",
+  },
+  forgotText: {
+    marginTop: 10,
+    color: "#3D7DFF",
+    fontWeight: "600",
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    justifyContent: "center",
+    padding: 20,
+  },
+  modalCard: {
+    backgroundColor: "#FFF",
+    borderRadius: 16,
+    padding: 16,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 10,
+  },
+  modalButton: {
+    backgroundColor: "#3D7DFF",
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: "center",
+    marginTop: 6,
+  },
+  modalButtonText: {
+    color: "#FFF",
+    fontWeight: "600",
+  },
+  modalCancel: {
+    marginTop: 12,
+    textAlign: "center",
+    color: "#6B7280",
   },
 });

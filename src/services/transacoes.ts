@@ -17,9 +17,11 @@ async function getToken() {
   return token;
 }
 
-export async function listarTransacoes() {
+export async function listarTransacoes(mes?: number, ano?: number) {
   const token = await getToken();
-  return apiRequest("/transacoes", "GET", undefined, token);
+  const params =
+    mes !== undefined && ano !== undefined ? `?mes=${mes}&ano=${ano}` : "";
+  return apiRequest(`/transacoes${params}`, "GET", undefined, token);
 }
 
 export async function criarTransacao(data: TransacaoPayload) {

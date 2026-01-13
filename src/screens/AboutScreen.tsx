@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Image, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ArrowLeft, Sparkles, ShieldCheck, Heart, Github, Mail } from "lucide-react-native";
+import { ArrowLeft, Sparkles, ShieldCheck, Heart, Github, Mail, ArrowRight } from "lucide-react-native";
 
 export default function AboutScreen({ navigation }: any) {
   return (
@@ -29,9 +29,10 @@ export default function AboutScreen({ navigation }: any) {
               <Sparkles size={20} color="#3B82F6" />
             </View>
             <View style={styles.cardText}>
-              <Text style={styles.cardTitle}>Inteligencia Artificial</Text>
+              <Text style={styles.cardTitle}>Inteligência Artificial</Text>
               <Text style={styles.cardSubtitle}>
-                Insights personalizados e sugestoes inteligentes para melhorar suas financas.
+                Insights personalizados e sugestoes inteligentes para melhorar suas 
+                financas.
               </Text>
             </View>
           </View>
@@ -41,9 +42,9 @@ export default function AboutScreen({ navigation }: any) {
               <ShieldCheck size={20} color="#22C55E" />
             </View>
             <View style={styles.cardText}>
-              <Text style={styles.cardTitle}>Seguranca</Text>
+              <Text style={styles.cardTitle}>Segurança</Text>
               <Text style={styles.cardSubtitle}>
-                Seus dados sao criptografados e protegidos com as melhores praticas.
+                Seus dados são criptografádos e protegidos com as melhores práticas.
               </Text>
             </View>
           </View>
@@ -55,20 +56,10 @@ export default function AboutScreen({ navigation }: any) {
             <View style={styles.cardText}>
               <Text style={styles.cardTitle}>Feito com Carinho</Text>
               <Text style={styles.cardSubtitle}>
-                Desenvolvido com dedicacao para ajudar voce a alcancar seus objetivos.
+                Desenvolvido com dedicação para ajudar você a alcançar seus objetivos.
               </Text>
             </View>
           </View>
-
-          <TouchableOpacity style={styles.linkCard}>
-            <View style={[styles.iconWrap, { backgroundColor: "#F3F4F6" }]}>
-              <Github size={20} color="#111827" />
-            </View>
-            <View style={styles.cardText}>
-              <Text style={styles.cardTitle}>Codigo Aberto</Text>
-              <Text style={styles.cardSubtitle}>Contribua no GitHub</Text>
-            </View>
-          </TouchableOpacity>
 
           <TouchableOpacity style={styles.linkCard}>
             <View style={[styles.iconWrap, { backgroundColor: "#F3F4F6" }]}>
@@ -76,8 +67,9 @@ export default function AboutScreen({ navigation }: any) {
             </View>
             <View style={styles.cardText}>
               <Text style={styles.cardTitle}>Suporte</Text>
-              <Text style={styles.cardSubtitle}>contato@financas.app</Text>
+              <Text style={styles.cardSubtitle}>programacaoaguiar@gmail.com</Text>
             </View>
+            <ArrowRight size={18} />
           </TouchableOpacity>
 
           <View style={styles.footerLinks}>
@@ -85,7 +77,7 @@ export default function AboutScreen({ navigation }: any) {
             <Text style={styles.footerDivider}>•</Text>
             <Text style={styles.footerLink}>Politica de Privacidade</Text>
           </View>
-          <Text style={styles.footerCopy}>© 2026 Financas. Todos os direitos reservados.</Text>
+          <Text style={styles.footerCopy}>© 2026 FinancIA. Todos os direitos reservados.</Text>
         </View>
       </ScrollView>
     </SafeAreaView>
