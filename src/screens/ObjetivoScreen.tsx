@@ -265,6 +265,8 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   loading: {
-
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center"
   }
 });

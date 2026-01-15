@@ -39,6 +39,7 @@ export default function TwoFactorModal({
           </View>
           <TextInput
             placeholder="Codigo de 6 digitos"
+            placeholderTextColor="#444"
             keyboardType="numeric"
             style={styles.modalInput}
             value={code}

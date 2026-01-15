@@ -1,8 +1,8 @@
+import { emitUnauthorized } from "../utils/authEvents";
 import { ApiError } from "../utils/errors";
 
-export const API_URL = "http://10.0.2.2:3333";
-
-import { emitUnauthorized } from "../utils/authEvents";
+export const API_URL =
+  process.env.EXPO_PUBLIC_API_URL || "http://10.0.2.2:3333";
 
 export async function apiRequest<T = any>(
   path: string,

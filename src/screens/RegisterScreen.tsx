@@ -53,6 +53,7 @@ export default function RegisterScreen() {
       <TextInput
         style={styles.input}
         placeholder="Seu nome"
+        placeholderTextColor="#444"
         value={nome}
         onChangeText={setNome}
       />
@@ -60,6 +61,7 @@ export default function RegisterScreen() {
       <TextInput
         style={styles.input}
         placeholder="Seu Email"
+        placeholderTextColor="#444"
         autoCapitalize="none"
         value={email}
         onChangeText={setEmail}
@@ -68,6 +70,7 @@ export default function RegisterScreen() {
       <TextInput
         style={styles.input}
         placeholder="Sua Senha"
+        placeholderTextColor="#444"
         secureTextEntry
         value={senha}
         onChangeText={setSenha}

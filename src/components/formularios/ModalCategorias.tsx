@@ -73,6 +73,7 @@ export default function ModalCategorias({
 
           <TextInput
             placeholder="Nome da categoria"
+            placeholderTextColor="#444"
             value={novaCategoria}
             onChangeText={onNovaCategoriaChange}
             style={styles.input}

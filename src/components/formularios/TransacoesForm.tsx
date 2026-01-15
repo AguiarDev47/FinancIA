@@ -130,7 +130,7 @@ export default function NovaTransacaoScreen({ navigation }: any) {
   }
 
   return (
-    <SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: "#FFF" }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#FFF" }}>
       <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 100 }}>
 
         <View style={{ backgroundColor: "#FFF", paddingHorizontal: 20 }}>
@@ -168,9 +168,9 @@ export default function NovaTransacaoScreen({ navigation }: any) {
 
           <Text style={styles.label}>Valor *</Text>
           <View style={styles.valorBox}>
-            <Text style={styles.rs}>R$</Text>
             <TextInput
               placeholder="R$ 0,00"
+              placeholderTextColor="#444"
               keyboardType="numeric"
               value={valor ? formatarMoeda(Number(valor)) : ""}
               onChangeText={handleValorChange}
@@ -197,6 +197,7 @@ export default function NovaTransacaoScreen({ navigation }: any) {
           <Text style={styles.label}>Descrição</Text>
           <TextInput
             placeholder="Ex: Almoço no restaurante"
+            placeholderTextColor="#444"
             value={descricao}
             onChangeText={setDescricao}
             style={styles.input}
@@ -239,6 +240,7 @@ export default function NovaTransacaoScreen({ navigation }: any) {
           <Text style={styles.label}>Observações</Text>
           <TextInput
             placeholder="Adicione observações (opcional)"
+            placeholderTextColor="#444"
             multiline
             numberOfLines={4}
             value={observacoes}
@@ -418,7 +420,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#3B82F6",
     padding: 16,
     borderRadius: 12,
-    marginBottom: 50,
   },
 
   buttonText: {

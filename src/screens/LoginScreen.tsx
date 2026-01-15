@@ -10,7 +10,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
-  Modal,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { AuthContext } from "../contexts/AuthContext";
@@ -19,6 +18,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../types/navigation";
 import { requestPasswordReset, resetPassword } from "../services/auth";
 import { getErrorMessage } from "../utils/errors";
+import ResetPasswordModal from "../modais/ResetPasswordModal";
 
 export default function LoginScreen() {
   const { signIn, verifyTwoFactor } = useContext(AuthContext);
@@ -147,6 +147,7 @@ export default function LoginScreen() {
         <TextInput
           style={styles.input}
           placeholder="Seu Email"
+          placeholderTextColor="#444"
           autoCapitalize="none"
           value={email}
           onChangeText={setEmail}
@@ -157,6 +158,7 @@ export default function LoginScreen() {
         <TextInput
           style={styles.input}
           placeholder="Sua Senha"
+          placeholderTextColor="#444"
           secureTextEntry
           value={senha}
           onChangeText={setSenha}
@@ -213,81 +215,29 @@ export default function LoginScreen() {
         </TouchableOpacity>
       )}
 
-      <Modal visible={resetModalVisible} transparent animationType="fade">
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Redefinir senha</Text>
+      <ResetPasswordModal
+        visible={resetModalVisible}
+        loading={loading}
+        resetTokenId={resetTokenId}
+        resetEmail={resetEmail}
+        resetCode={resetCode}
+        resetSenha={resetSenha}
+        resetConfirm={resetConfirm}
+        onResetEmailChange={setResetEmail}
+        onResetCodeChange={setResetCode}
+        onResetSenhaChange={setResetSenha}
+        onResetConfirmChange={setResetConfirm}
+        onRequestReset={handleRequestReset}
+        onResetPassword={handleResetPassword}
+        onClose={() => {
+          setResetModalVisible(false);
+          setResetTokenId(null);
+          setResetCode("");
+          setResetSenha("");
+          setResetConfirm("");
+        }}
+      />
 
-            {!resetTokenId ? (
-              <>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Seu Email"
-                  autoCapitalize="none"
-                  value={resetEmail}
-                  onChangeText={setResetEmail}
-                />
-                <TouchableOpacity
-                  style={styles.modalButton}
-                  onPress={handleRequestReset}
-                >
-                  {loading ? (
-                    <ActivityIndicator color="#FFF" />
-                  ) : (
-                    <Text style={styles.modalButtonText}>Enviar codigo</Text>
-                  )}
-                </TouchableOpacity>
-              </>
-            ) : (
-              <>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Codigo de 6 digitos"
-                  keyboardType="numeric"
-                  value={resetCode}
-                  onChangeText={setResetCode}
-                />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Nova senha"
-                  secureTextEntry
-                  value={resetSenha}
-                  onChangeText={setResetSenha}
-                />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Confirmar nova senha"
-                  secureTextEntry
-                  value={resetConfirm}
-                  onChangeText={setResetConfirm}
-                />
-                <TouchableOpacity
-                  style={styles.modalButton}
-                  onPress={handleResetPassword}
-                >
-                  {loading ? (
-                    <ActivityIndicator color="#FFF" />
-                  ) : (
-                    <Text style={styles.modalButtonText}>Salvar</Text>
-                  )}
-                </TouchableOpacity>
-              </>
-            )}
-
-            <TouchableOpacity
-              onPress={() => {
-                setResetModalVisible(false);
-                setResetTokenId(null);
-                setResetCode("");
-                setResetSenha("");
-                setResetConfirm("");
-              }}
-            >
-              <Text style={styles.modalCancel}>Cancelar</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -357,37 +307,5 @@ const styles = StyleSheet.create({
     marginTop: 10,
     color: "#3D7DFF",
     fontWeight: "600",
-  },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
-    justifyContent: "center",
-    padding: 20,
-  },
-  modalCard: {
-    backgroundColor: "#FFF",
-    borderRadius: 16,
-    padding: 16,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    marginBottom: 10,
-  },
-  modalButton: {
-    backgroundColor: "#3D7DFF",
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: "center",
-    marginTop: 6,
-  },
-  modalButtonText: {
-    color: "#FFF",
-    fontWeight: "600",
-  },
-  modalCancel: {
-    marginTop: 12,
-    textAlign: "center",
-    color: "#6B7280",
   },
 });

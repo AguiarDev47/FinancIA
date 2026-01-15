@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useCallback } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, RefreshControl } from "react-native";
 import { Wallet, ArrowUpCircle, ArrowDownCircle, BarChart2, Minus, Plus, Target, FileText, Calendar, DollarSign, AlertTriangle } from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import BarChart, { BarDatum } from "../components/BarChart";
 import { buscarResumoDashboard } from "../services/dashboard";
@@ -35,10 +35,12 @@ export default function DashboardScreen() {
     }
   }
 
-  useEffect(() => {
-    setLoading(true);
-    carregar(mes, ano);
-  }, [mes, ano]);
+  useFocusEffect(
+    useCallback(() => {
+      setLoading(true);
+      carregar(mes, ano);
+    }, [mes, ano])
+  );
 
   if (loading || !data) {
     return (

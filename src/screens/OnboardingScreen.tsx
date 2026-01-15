@@ -66,7 +66,6 @@ export default function OnboardingScreen() {
         </View>
 
         <View style={{ paddingHorizontal: 20 }}>
-          {/* INDICADORES */}
           <View style={styles.indicators}>
             {onboardingData.map((_, i) => {
               const bg = index === i ? "#3B82F6" : "#C7C7C7";
@@ -81,7 +80,6 @@ export default function OnboardingScreen() {
             })}
           </View>
 
-          {/* BOTÃO */}
           <TouchableOpacity style={styles.button} onPress={handleNext}>
             <Text style={styles.buttonText}>
               {index === onboardingData.length - 1 ? "Começar" : "Próximo →"}
@@ -111,7 +109,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#3B82F6",
     paddingVertical: 14,
     borderRadius: 12,
-    marginBottom: 50
   },
   buttonText: {
     textAlign: "center",

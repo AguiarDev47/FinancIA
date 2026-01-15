@@ -47,6 +47,7 @@ export default function ChangePasswordModal({
           </View>
           <TextInput
             placeholder="Senha atual"
+            placeholderTextColor="#444"
             secureTextEntry
             style={styles.modalInput}
             value={senhaAtual}
@@ -54,6 +55,7 @@ export default function ChangePasswordModal({
           />
           <TextInput
             placeholder="Nova senha"
+            placeholderTextColor="#444"
             secureTextEntry
             style={styles.modalInput}
             value={novaSenha}
@@ -61,6 +63,7 @@ export default function ChangePasswordModal({
           />
           <TextInput
             placeholder="Confirmar nova senha"
+            placeholderTextColor="#444"
             secureTextEntry
             style={styles.modalInput}
             value={confirmSenha}

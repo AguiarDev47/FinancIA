@@ -49,7 +49,7 @@ export default function ObjetivoForm({ navigation }: Props) {
   const [data, setData] = useState(new Date());
   const [mostrarCalendario, setMostrarCalendario] = useState(false);
 
-  const categorias = ["Viagem", "Estudos", "Emergência", "Saúde"];
+  const categorias = ["Viagem", "Estudos", "Emergência", "Saúde", "Veículo"];
 
   useEffect(() => {
     let ativo = true;
@@ -124,24 +124,25 @@ export default function ObjetivoForm({ navigation }: Props) {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}
       >
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <ArrowLeft size={26} color="#000" />
+          </TouchableOpacity>
+
+          <Text style={styles.title}>
+            {objetivoId ? "Editar Objetivo" : "Novo Objetivo"}
+          </Text>
+        </View>
         <ScrollView
           style={styles.container}
           contentContainerStyle={{ paddingBottom: 120 }}
         >
-          <View style={styles.header}>
-            <TouchableOpacity onPress={() => navigation.goBack()}>
-              <ArrowLeft size={26} color="#000" />
-            </TouchableOpacity>
-
-            <Text style={styles.title}>
-              {objetivoId ? "Editar Objetivo" : "Novo Objetivo"}
-            </Text>
-          </View>
 
           <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
             <Text style={styles.label}>Nome do Objetivo</Text>
             <TextInput
-              placeholder="Ex: Curso de programação"
+              placeholder="Ex: Viagem para Europa"
+              placeholderTextColor="#444"
               value={objetivo}
               onChangeText={setObjetivo}
               style={styles.input}
@@ -240,13 +241,6 @@ export default function ObjetivoForm({ navigation }: Props) {
                   <Text style={styles.itemText}>{cat}</Text>
                 </TouchableOpacity>
               ))}
-
-              <TouchableOpacity
-                style={styles.createButton}
-                onPress={() => setModalCategoria(false)}
-              >
-                <Text style={styles.createText}>+ Criar nova categoria</Text>
-              </TouchableOpacity>
             </ScrollView>
           </View>
         </TouchableOpacity>
@@ -268,6 +262,8 @@ const styles = StyleSheet.create({
     gap: 16,
     marginTop: 20,
     marginBottom: 20,
+    backgroundColor: "#FFF",
+    paddingHorizontal: 20
   },
 
   title: {

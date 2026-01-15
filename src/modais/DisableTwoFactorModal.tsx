@@ -39,6 +39,7 @@ export default function DisableTwoFactorModal({
           </View>
           <TextInput
             placeholder="Senha atual"
+            placeholderTextColor="#444"
             secureTextEntry
             style={styles.modalInput}
             value={password}

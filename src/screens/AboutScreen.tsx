@@ -1,9 +1,21 @@
 import React from "react";
-import { View, Image, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
+import { View, Image, Text, StyleSheet, TouchableOpacity, ScrollView, Linking, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ArrowLeft, Sparkles, ShieldCheck, Heart, Github, Mail, ArrowRight } from "lucide-react-native";
 
 export default function AboutScreen({ navigation }: any) {
+  const suporteEmail = "programacaoaguiar@gmail.com";
+
+  async function handleSuporte() {
+    const url = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(suporteEmail)}`;
+    const canOpen = await Linking.canOpenURL(url);
+    if (!canOpen) {
+      Alert.alert("Suporte", "Nao foi possivel abrir o suporte.");
+      return;
+    }
+    await Linking.openURL(url);
+  }
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#FFF" }}>
       <View style={styles.header}>
@@ -61,13 +73,13 @@ export default function AboutScreen({ navigation }: any) {
             </View>
           </View>
 
-          <TouchableOpacity style={styles.linkCard}>
+          <TouchableOpacity style={styles.linkCard} onPress={handleSuporte}>
             <View style={[styles.iconWrap, { backgroundColor: "#F3F4F6" }]}>
               <Mail size={20} color="#111827" />
             </View>
             <View style={styles.cardText}>
               <Text style={styles.cardTitle}>Suporte</Text>
-              <Text style={styles.cardSubtitle}>programacaoaguiar@gmail.com</Text>
+              <Text style={styles.cardSubtitle}>{suporteEmail}</Text>
             </View>
             <ArrowRight size={18} />
           </TouchableOpacity>

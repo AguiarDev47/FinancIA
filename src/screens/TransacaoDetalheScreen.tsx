@@ -88,7 +88,8 @@ export default function TransacaoDetalheScreen() {
               { color: isDespesa ? "#EF4444" : "#22C55E" },
             ]}
           >
-            {isDespesa ? "-" : "+"} R$ {formatarMoeda(transacao.valor.toFixed(2))}
+            {isDespesa ? "-" : "+"} 
+            {formatarMoeda(transacao.valor.toFixed(2))}
           </Text>
         </View>
 
